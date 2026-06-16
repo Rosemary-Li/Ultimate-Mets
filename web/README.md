@@ -24,15 +24,14 @@ content — the site still renders.
 app/
   layout.tsx          Root layout — renders the shared TopBar + Footer on EVERY page
   globals.css         Design tokens + shared chrome (top bar, footer, modal)
-  page.tsx            Home — real hero counts (v_site_stats) + real "Latest Games"
-  api/
-    games/            GET /api/games, /api/games?season=, /api/games/:gamePk
-    players/          GET /api/players, /api/players?q=, /api/players/:playerId
-  players/            DATA-DRIVEN: roster index (page.tsx) + profile ([playerId])
-    layout.tsx          scopes CSS under .route-players + imports styles.css
-  seasons/ games/ leaders/ postseason/ lab/ media/
-                      Still the ported prototypes (illustrative data, not yet wired)
-                      Each: page.tsx + styles.css + layout.tsx (.route-<name> scope)
+  page.tsx            Home — all sections data-driven (counts, latest games,
+                      today-in-history, trending)
+  api/                games · players · seasons · leaders · postseason · media ·
+                      today · compare  (each reads the DB via the pg client)
+  players/  seasons/  games/  leaders/  postseason/  media/  lab/
+                      DATA-DRIVEN routes. Each: page.tsx (+ [id]/page.tsx) +
+                      styles.css + layout.tsx (scopes CSS under .route-<name>)
+  Dockerfile          Next.js standalone image for Cloud Run
 components/
   TopBar.tsx          The ONE nav bar, defined once, used everywhere
   Footer.tsx, SignInModal.tsx, RecentlyViewed.tsx, RecentTracker.tsx
@@ -40,7 +39,8 @@ lib/
   nav.ts              Single source of truth for nav items + section colors
   db.ts               Postgres access via the `pg` client (Pool); queries return []
                       on error so the UI degrades gracefully
-  types.ts            Shared types (Game, Player, SeasonBatting/Pitching, SiteStats)
+  types.ts            Shared types (Game, Player, Season/Box batting & pitching,
+                      TeamSeason, PostseasonSeries, Trending, MediaItem, SiteStats, …)
 ```
 
 ### One navigation bar, defined once
@@ -63,31 +63,29 @@ the page in `<div className="route-<name>">`. Shared chrome stays global in `glo
 API route handlers query the shared PostgreSQL database via the `pg` client (no separate
 API server). Connection comes from `DATABASE_URL`.
 
-- `GET /api/games` · `?season=2024` · `/api/games/:gamePk`
+- `GET /api/games` · `?season=2024` · `/api/games/:gamePk` (linescore + box score)
 - `GET /api/players` · `?q=<name>` · `/api/players/:playerId` (bio + season batting/pitching)
 - `GET /api/seasons` · `/api/seasons/:year` (standings line + that season's games)
+- `GET /api/leaders` `?scope=career|season&type=batting|pitching&stat=…&season=…`
+- `GET /api/postseason` · `/api/postseason/:year`
+- `GET /api/media` `?type=…` · `GET /api/today` (editorial + game anniversaries)
+- `GET /api/compare?ids=…` (career stats for the Lab)
 
-Server components also read the DB directly (e.g. the home hero counts and the player
-profile pages).
+Server components also read the DB directly (home, player/season/game/postseason pages);
+the Lab is a client component that calls the APIs.
 
-## What's real vs. illustrative
+## Everything is wired to the database
 
-| Real (from the DB) | Illustrative (not yet wired) |
-|---|---|
-| Home: hero counts, Latest Games, Today in History, Trending | Lab (player comparison tool) |
-| `/games` index + `/games/:gamePk` (linescore + box score) | |
-| `/players` roster + player profiles | |
-| `/seasons` index + `/seasons/:year` detail | |
-| `/leaders` (career + season leaderboards) | |
-| `/postseason` + `/postseason/:year` | |
-| `/media` archive (editorial) | |
-| API: games, players, seasons, leaders, postseason, media, today | |
+All pages render real data: home (counts, latest games, today-in-history, trending),
+players (roster split current/historical + profiles), seasons, games (linescore + box
+score), leaders, postseason, media, and the Lab comparison. The database currently holds
+2024–2026; backfill earlier seasons from the pipeline to extend it.
 
-## Known follow-ups
+## Notes / follow-ups
 
-- **Type-checking is disabled during build** (`next.config.mjs` →
-  `typescript.ignoreBuildErrors`). The not-yet-wired pages were ported from untyped JS
-  prototypes; they run but aren't fully typed. The `lib/`, `app/api/`, `app/players/`,
-  and `app/page.tsx` code is properly typed. Tighten the rest, then re-enable.
-- Wire the remaining pages to the DB as each data domain lands in the pipeline
-  (Seasons/Standings → Leaders → Postseason → editorial content).
+- **Type-checking is relaxed during build** (`next.config.mjs` →
+  `typescript.ignoreBuildErrors`). The data-driven pages and `lib/`/`app/api/` are
+  properly typed; some leftover prototype helpers aren't. Tighten and re-enable when
+  convenient.
+- `output: "standalone"` is set for containerized deploys; see `Dockerfile` and
+  [../DEPLOY.md](../DEPLOY.md).
