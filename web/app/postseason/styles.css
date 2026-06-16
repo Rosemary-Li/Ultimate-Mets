@@ -1,0 +1,144 @@
+/* Scoped under .route-postseason (set by app/postseason/layout.tsx) to prevent
+   cross-page CSS bleed. Global resets/chrome live in app/globals.css. */
+
+.route-postseason :root {
+    --mets-blue: #002D72; --mets-blue-dark: #001A4A; --mets-orange: #FF5910;
+    --mets-orange-light: #FF7A3D; --bg: #FAFAFA; --surface: #FFFFFF;
+    --border: #E5E7EB; --text: #111827; --text-muted: #6B7280; --text-light: #9CA3AF;
+    --num-font: 'Roboto Mono', monospace;
+    --win: #10B981; --loss: #EF4444; --gold: #F59E0B;
+  }
+.route-postseason button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+.route-postseason a { color: inherit; text-decoration: none; }
+.route-postseason /* Topbar */
+  .topbar { background: var(--mets-blue); color: white; border-bottom: 3px solid var(--mets-orange); }
+.route-postseason .topbar-inner { max-width: 1500px; margin: 0 auto; display: flex; align-items: center; padding: 0 24px; height: 56px; }
+.route-postseason .logo { font-weight: 800; font-size: 18px; color: var(--mets-orange); letter-spacing: -0.02em; }
+.route-postseason .logo span { color: white; }
+.route-postseason .nav { display: flex; gap: 4px; margin-left: 40px; flex: 1; }
+.route-postseason .nav button { color: white; padding: 8px 14px; font-size: 13px; font-weight: 500; border-radius: 6px; }
+.route-postseason .nav button:hover { background: rgba(255,255,255,0.1); }
+.route-postseason .nav button.active { background: var(--mets-orange); }
+.route-postseason .nav-tools { display: flex; gap: 12px; align-items: center; }
+.route-postseason .search { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 7px 12px; border-radius: 6px; font-size: 13px; width: 240px; outline: none; }
+.route-postseason .search::placeholder { color: rgba(255,255,255,0.6); }
+.route-postseason .signin { background: var(--mets-orange); color: white; padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+.route-postseason /* Hero */
+  .hero { background: linear-gradient(135deg, var(--mets-blue) 0%, var(--mets-blue-dark) 100%); color: white; padding: 36px 0 28px; position: relative; overflow: hidden; }
+.route-postseason .hero::after { content: ''; position: absolute; right: -150px; top: -150px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(255,89,16,0.18) 0%, transparent 60%); pointer-events: none; }
+.route-postseason .hero-inner { max-width: 1500px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+.route-postseason .hero-crumb { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 8px; }
+.route-postseason .hero-title { font-size: 38px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+.route-postseason .hero-sub { font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 6px; max-width: 620px; }
+.route-postseason .hero-stats { display: flex; gap: 28px; margin-top: 22px; flex-wrap: wrap; }
+.route-postseason .hero-stat { display: flex; flex-direction: column; }
+.route-postseason .hero-stat .num { font-family: var(--num-font); font-size: 36px; font-weight: 700; color: var(--mets-orange-light); line-height: 1; }
+.route-postseason .hero-stat .lbl { font-size: 11px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+.route-postseason .hero-stat .sub { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; font-family: var(--num-font); }
+.route-postseason /* Subnav */
+  .subnav { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+.route-postseason .subnav-inner { max-width: 1500px; margin: 0 auto; padding: 0 24px; display: flex; overflow-x: auto; }
+.route-postseason .subnav-item { padding: 14px 18px; color: var(--text-muted); font-size: 13px; font-weight: 500; border-bottom: 3px solid transparent; white-space: nowrap; }
+.route-postseason .subnav-item:hover { color: var(--text); }
+.route-postseason .subnav-item.active { color: var(--mets-blue); border-bottom-color: var(--mets-orange); font-weight: 700; }
+.route-postseason /* Layout */
+  .main { max-width: 1500px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+@media (max-width: 1100px) {
+.route-postseason .main { grid-template-columns: 1fr; }
+}
+.route-postseason .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+.route-postseason .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.route-postseason .card-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.route-postseason .card-action { font-size: 12px; color: var(--text-muted); cursor: pointer; }
+.route-postseason .card-action:hover { color: var(--mets-orange); }
+.route-postseason /* Year timeline */
+  .timeline { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding-bottom: 8px; padding: 8px 0 12px; }
+.route-postseason .year-card { flex-shrink: 0; width: 124px; border: 1px solid var(--border); border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.15s; background: white; margin-right: 10px; position: relative; }
+.route-postseason .year-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.08); border-color: var(--mets-orange); }
+.route-postseason .year-card.champion { background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-color: var(--gold); }
+.route-postseason .year-card.champion::before { content: '👑'; position: absolute; top: -10px; right: -8px; font-size: 22px; }
+.route-postseason .year-card.pennant { background: linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%); border-color: var(--mets-orange); }
+.route-postseason .year-card.selected { border-color: var(--mets-blue); border-width: 2px; box-shadow: 0 0 0 3px rgba(0,45,114,0.12); padding: 11px; }
+.route-postseason .year-num { font-family: var(--num-font); font-size: 22px; font-weight: 800; color: var(--mets-blue); }
+.route-postseason .year-rec { font-family: var(--num-font); font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.route-postseason .year-result { font-size: 11px; font-weight: 700; margin-top: 8px; padding: 3px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em; display: inline-block; }
+.route-postseason .year-result.champ { background: var(--gold); color: white; }
+.route-postseason .year-result.penn { background: var(--mets-orange); color: white; }
+.route-postseason .year-result.lcs { background: var(--mets-blue); color: white; }
+.route-postseason .year-result.ds { background: #6B7280; color: white; }
+.route-postseason .year-result.wc { background: #9CA3AF; color: white; }
+.route-postseason .year-mvp { font-size: 10.5px; color: var(--text-muted); margin-top: 6px; line-height: 1.3; }
+.route-postseason /* Series detail */
+  .series-detail { background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); border: 1px solid #FED7AA; border-radius: 8px; padding: 22px; margin-bottom: 20px; }
+.route-postseason .series-detail-head { display: flex; justify-content: space-between; align-items: start; gap: 20px; flex-wrap: wrap; }
+.route-postseason .series-detail-title { font-size: 22px; font-weight: 800; color: var(--mets-blue); letter-spacing: -0.01em; }
+.route-postseason .series-detail-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.route-postseason .series-result-big { display: flex; align-items: baseline; gap: 12px; }
+.route-postseason .series-result-big .verdict { font-size: 20px; font-weight: 800; }
+.route-postseason .verdict.won { color: var(--win); }
+.route-postseason .verdict.lost { color: var(--loss); }
+.route-postseason .series-result-big .vs { font-family: var(--num-font); font-size: 26px; font-weight: 700; }
+.route-postseason .series-games-row { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+.route-postseason .series-game-card { flex: 1; min-width: 100px; max-width: 160px; background: white; border-radius: 6px; padding: 10px; border: 1px solid var(--border); cursor: pointer; transition: transform 0.1s; }
+.route-postseason .series-game-card:hover { transform: translateY(-1px); border-color: var(--mets-blue); }
+.route-postseason .series-game-card .gnum { font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.route-postseason .series-game-card .gscore { font-family: var(--num-font); font-size: 18px; font-weight: 700; margin-top: 2px; }
+.route-postseason .series-game-card.win .gscore { color: var(--win); }
+.route-postseason .series-game-card.loss .gscore { color: var(--loss); }
+.route-postseason .series-game-card .gloc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.route-postseason .series-game-card .gnote { font-size: 10.5px; margin-top: 4px; color: var(--mets-orange); font-weight: 600; }
+.route-postseason /* Series table */
+  table.series-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.route-postseason table.series-table thead th { background: #F3F4F6; padding: 9px 8px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); border-bottom: 2px solid var(--border); text-align: right; cursor: pointer; }
+.route-postseason table.series-table thead th:nth-child(-n+3) { text-align: left; }
+.route-postseason table.series-table tbody td { padding: 9px 8px; border-bottom: 1px solid #F3F4F6; font-family: var(--num-font); text-align: right; }
+.route-postseason table.series-table tbody td:nth-child(-n+3) { text-align: left; font-family: 'Inter', sans-serif; }
+.route-postseason table.series-table tbody tr { cursor: pointer; }
+.route-postseason table.series-table tbody tr:hover { background: #FFF7ED; }
+.route-postseason table.series-table tbody tr.selected { background: #FFEDD5; }
+.route-postseason table.series-table .yr { font-family: var(--num-font); font-weight: 700; color: var(--mets-blue); }
+.route-postseason table.series-table .rd-tag { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 3px; font-weight: 700; letter-spacing: 0.04em; min-width: 38px; text-align: center; color: white; }
+.route-postseason .rd-WS { background: var(--gold); }
+.route-postseason .rd-NLCS, .route-postseason .rd-LCS { background: var(--mets-orange); }
+.route-postseason .rd-NLDS, .route-postseason .rd-DS { background: var(--mets-blue); }
+.route-postseason .rd-WC { background: #6B7280; }
+.route-postseason table.series-table .res.w { color: var(--win); font-weight: 700; }
+.route-postseason table.series-table .res.l { color: var(--loss); font-weight: 700; }
+.route-postseason /* Postseason leaders */
+  table.lead { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.route-postseason table.lead thead th { background: #F3F4F6; padding: 9px 8px; font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); border-bottom: 1px solid var(--border); text-align: right; }
+.route-postseason table.lead thead th:first-child, .route-postseason table.lead thead th:nth-child(2) { text-align: left; }
+.route-postseason table.lead tbody td { padding: 9px 8px; border-bottom: 1px solid #F3F4F6; font-family: var(--num-font); text-align: right; font-size: 12.5px; }
+.route-postseason table.lead tbody td:first-child { width: 28px; color: var(--text-light); font-weight: 600; }
+.route-postseason table.lead tbody td:nth-child(2) { font-family: 'Inter', sans-serif; text-align: left; font-weight: 500; }
+.route-postseason table.lead tbody tr:hover { background: #FFF7ED; }
+.route-postseason table.lead .pos { color: var(--text-muted); font-size: 11px; margin-left: 4px; }
+.route-postseason table.lead .leader-val { color: var(--mets-orange); font-weight: 700; }
+.route-postseason /* Pill toggle */
+  .pill-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.route-postseason .pill-toggle button { padding: 6px 14px; font-size: 12px; font-weight: 600; color: var(--text-muted); background: white; }
+.route-postseason .pill-toggle button.active { background: var(--mets-blue); color: white; }
+.route-postseason /* Moments */
+  .moment-card { padding: 14px; border-radius: 8px; background: white; border: 1px solid var(--border); margin-bottom: 12px; display: grid; grid-template-columns: 70px 1fr; gap: 16px; align-items: start; }
+.route-postseason .moment-card:last-child { margin-bottom: 0; }
+.route-postseason .moment-card.featured { background: linear-gradient(135deg, var(--mets-blue) 0%, var(--mets-blue-dark) 100%); color: white; border-color: var(--mets-blue); }
+.route-postseason .moment-card.featured .m-date, .route-postseason .moment-card.featured .m-meta { color: rgba(255,255,255,0.8); }
+.route-postseason .moment-card.featured .m-title { color: white; }
+.route-postseason .moment-img { width: 70px; height: 70px; border-radius: 6px; background: linear-gradient(135deg, var(--mets-orange), var(--mets-orange-light)); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: white; flex-shrink: 0; }
+.route-postseason .moment-card.featured .moment-img { background: linear-gradient(135deg, var(--mets-orange), #FBBF24); }
+.route-postseason .m-date { font-size: 11px; color: var(--mets-orange); font-weight: 700; font-family: var(--num-font); text-transform: uppercase; letter-spacing: 0.04em; }
+.route-postseason .m-title { font-size: 14.5px; font-weight: 700; margin-top: 3px; line-height: 1.3; }
+.route-postseason .m-desc { font-size: 12.5px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
+.route-postseason .m-meta { font-size: 11px; color: var(--text-light); margin-top: 6px; font-family: var(--num-font); }
+.route-postseason /* Sidebar */
+  .sidebar-stat { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.route-postseason .sidebar-stat:last-child { border-bottom: none; }
+.route-postseason .sidebar-stat .lbl { color: var(--text-muted); }
+.route-postseason .sidebar-stat .val { font-family: var(--num-font); font-weight: 600; }
+.route-postseason .opponent-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.route-postseason .opponent-row:last-child { border-bottom: none; }
+.route-postseason .opp-name { font-weight: 500; }
+.route-postseason .opp-rec { font-family: var(--num-font); font-weight: 600; font-size: 12px; color: var(--text-muted); }
+.route-postseason .opp-rec.dom { color: var(--win); }
+.route-postseason .opp-rec.bad { color: var(--loss); }
+.route-postseason .footer { max-width: 1500px; margin: 0 auto; padding: 32px 24px; color: var(--text-muted); font-size: 12px; border-top: 1px solid var(--border); text-align: center; }

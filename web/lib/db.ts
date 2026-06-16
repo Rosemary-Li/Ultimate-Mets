@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
-import Database from "better-sqlite3";
+import { DatabaseSync } from "node:sqlite";
 import type { Game } from "./types";
 
 // The data pipeline writes its SQLite file here. Override with METS_DB_PATH.
@@ -11,20 +11,20 @@ const DEFAULT_DB_PATH = path.join(
   "mets.db",
 );
 
-let _db: Database.Database | null = null;
+let _db: DatabaseSync | null = null;
 
-function getDb(): Database.Database | null {
+function getDb(): DatabaseSync | null {
   if (_db) return _db;
   const dbPath = process.env.METS_DB_PATH ?? DEFAULT_DB_PATH;
   if (!fs.existsSync(dbPath)) {
     // Pipeline hasn't run yet — callers fall back to illustrative data.
     return null;
   }
-  _db = new Database(dbPath, { readonly: true, fileMustExist: true });
+  _db = new DatabaseSync(dbPath, { readOnly: true });
   return _db;
 }
 
-/** Most recent games (default: Mets, newest first). Empty if the DB is absent. */
+/** Most recent final games, newest first. Empty if the DB is absent. */
 export function getRecentGames(limit = 10): Game[] {
   const db = getDb();
   if (!db) return [];
@@ -35,20 +35,18 @@ export function getRecentGames(limit = 10): Game[] {
        ORDER BY official_date DESC, game_number DESC
        LIMIT ?`,
     )
-    .all(limit) as Game[];
+    .all(limit) as unknown as Game[];
 }
 
 /** A single game by its MLB game_pk, or null. */
 export function getGame(gamePk: number): Game | null {
   const db = getDb();
   if (!db) return null;
-  const row = db
-    .prepare(`SELECT * FROM games WHERE game_pk = ?`)
-    .get(gamePk) as Game | undefined;
-  return row ?? null;
+  const row = db.prepare(`SELECT * FROM games WHERE game_pk = ?`).get(gamePk);
+  return (row as unknown as Game) ?? null;
 }
 
-/** Games for a season, newest first. */
+/** Games for a season, in chronological order. */
 export function getGamesBySeason(season: number): Game[] {
   const db = getDb();
   if (!db) return [];
@@ -56,5 +54,5 @@ export function getGamesBySeason(season: number): Game[] {
     .prepare(
       `SELECT * FROM games WHERE season = ? ORDER BY official_date, game_number`,
     )
-    .all(season) as Game[];
+    .all(season) as unknown as Game[];
 }
