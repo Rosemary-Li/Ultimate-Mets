@@ -1,0 +1,218 @@
+/* ============================================================
+ * Ultimate Mets — shared design system
+ * Design tokens + the chrome shared by every page (top bar, footer,
+ * common section/sidebar primitives). Page-specific styles live in each
+ * route's own styles.css.
+ * ============================================================ */
+
+:root {
+  --mets-blue: #002d72;
+  --mets-blue-dark: #001a4a;
+  --mets-orange: #ff5910;
+  --mets-orange-light: #ff7a3d;
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --text: #111827;
+  --text-muted: #6b7280;
+  --text-light: #9ca3af;
+  --num-font: "Roboto Mono", monospace;
+
+  /* section accent colors (players/seasons/games/...) */
+  --c-players: var(--mets-orange);
+  --c-seasons: var(--mets-blue);
+  --c-games: #10b981;
+  --c-leaders: #f59e0b;
+  --c-postseason: var(--mets-blue-dark);
+  --c-lab: #8b5cf6;
+  --c-media: #ec4899;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.5;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ---------------- Top bar (shared layout chrome) ---------------- */
+.topbar {
+  background: var(--mets-blue);
+  color: white;
+  border-bottom: 3px solid var(--mets-orange);
+}
+.topbar-inner {
+  max-width: 1500px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  height: 56px;
+}
+.logo {
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--mets-orange);
+  letter-spacing: -0.02em;
+}
+.logo span {
+  color: white;
+}
+.nav {
+  display: flex;
+  gap: 4px;
+  margin-left: 40px;
+  flex: 1;
+}
+.nav a {
+  color: white;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+}
+.nav a:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.nav a.active {
+  background: var(--mets-orange);
+}
+.nav-tools {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.search {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  width: 240px;
+  outline: none;
+}
+.search::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+.signin {
+  background: var(--mets-orange);
+  color: white;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------------- Footer ---------------- */
+.footer {
+  max-width: 1500px;
+  margin: 32px auto 0;
+  padding: 32px 24px;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+/* ---------------- Cross-page helpers (clickable names/rows/cards) ----- */
+.linkable {
+  cursor: pointer;
+  transition: color 0.1s;
+}
+.linkable:hover {
+  color: var(--mets-orange) !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--mets-orange);
+}
+tr.linkable-row {
+  cursor: pointer;
+}
+tr.linkable-row:hover {
+  background: #fff7ed !important;
+}
+tr.linkable-row:hover td:first-child {
+  color: var(--mets-orange);
+}
+
+/* ---------------- Shared sign-in modal ---------------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+.modal {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 28px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+}
+.modal h2 {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.modal p {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+.modal label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 16px 0 6px;
+}
+.modal input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+.modal input:focus {
+  border-color: var(--mets-orange);
+}
+.modal-btn {
+  width: 100%;
+  background: var(--mets-orange);
+  color: white;
+  padding: 11px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 20px;
+}
+.modal-close {
+  float: right;
+  color: var(--text-light);
+  font-size: 20px;
+}

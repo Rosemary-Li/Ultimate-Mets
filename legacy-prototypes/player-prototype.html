@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>David Wright | Ultimate Mets Database</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --mets-blue: #002D72;
+    --mets-blue-dark: #001A4A;
+    --mets-orange: #FF5910;
+    --mets-orange-light: #FF7A3D;
+    --bg: #FAFAFA;
+    --surface: #FFFFFF;
+    --border: #E5E7EB;
+    --text: #111827;
+    --text-muted: #6B7280;
+    --text-light: #9CA3AF;
+    --num-font: 'Roboto Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.5;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+
+  /* ============= TOP BAR ============= */
+  .topbar {
+    background: var(--mets-blue);
+    color: white;
+    border-bottom: 3px solid var(--mets-orange);
+  }
+  .topbar-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    height: 56px;
+  }
+  .logo {
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--mets-orange);
+    letter-spacing: -0.02em;
+  }
+  .logo span { color: white; }
+  .nav { display: flex; gap: 4px; margin-left: 40px; flex: 1; }
+  .nav a {
+    color: white;
+    text-decoration: none;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .nav a:hover { background: rgba(255,255,255,0.1); }
+  .nav a.active { background: var(--mets-orange); }
+  .nav-tools { display: flex; gap: 12px; align-items: center; }
+  .search {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    width: 240px;
+    outline: none;
+  }
+  .search::placeholder { color: rgba(255,255,255,0.6); }
+  .search:focus { border-color: var(--mets-orange); }
+  .signin {
+    background: var(--mets-orange);
+    color: white;
+    text-decoration: none;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .signin:hover { background: var(--mets-orange-light); }
+
+  /* ============= PLAYER HEADER ============= */
+  .player-header {
+    background: linear-gradient(135deg, var(--mets-blue) 0%, var(--mets-blue-dark) 100%);
+    color: white;
+    padding: 32px 0 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .player-header::after {
+    content: '';
+    position: absolute;
+    right: -100px;
+    top: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255,89,16,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .player-header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    position: relative;
+    z-index: 1;
+  }
+  .player-photo {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--mets-orange), var(--mets-orange-light));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 44px;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+    border: 4px solid white;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  }
+  .player-info h1 {
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .player-info h1 .number {
+    color: var(--mets-orange);
+    font-size: 28px;
+    margin-left: 10px;
+    font-weight: 700;
+  }
+  .player-meta {
+    display: flex;
+    gap: 22px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+    flex-wrap: wrap;
+  }
+  .player-meta strong { color: white; font-weight: 600; }
+  .player-honors {
+    margin-top: 16px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    background: rgba(255,89,16,0.2);
+    color: #FFD4BC;
+    padding: 5px 11px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border: 1px solid rgba(255,89,16,0.4);
+  }
+
+  /* ============= TABS ============= */
+  .tabs {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+  .tabs-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 14px 18px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--mets-blue);
+    border-bottom-color: var(--mets-orange);
+    font-weight: 700;
+  }
+
+  /* ============= MAIN ============= */
+  .main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+  }
+  @media (max-width: 1024px) {
+    .main { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .card-action {
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  .card-action:hover { color: var(--mets-orange); }
+
+  /* ============= CHART ============= */
+  .chart-container { height: 280px; position: relative; }
+  .chart-legend {
+    display: flex;
+    gap: 18px;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .legend-line { width: 14px; height: 2px; border-top: 2px dashed; }
+
+  /* ============= PERCENTILE BUBBLES ============= */
+  .pct-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 50px;
+    align-items: center;
+    gap: 14px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .pct-row:last-of-type { border-bottom: none; }
+  .pct-label {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .pct-bar-track {
+    position: relative;
+    height: 8px;
+    background: linear-gradient(90deg, #3B82F6 0%, #93C5FD 30%, #E5E7EB 50%, #FCA5A5 70%, #EF4444 100%);
+    border-radius: 4px;
+  }
+  .pct-bar-marker {
+    position: absolute;
+    top: -5px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border: 3px solid var(--mets-blue);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .pct-value {
+    font-family: var(--num-font);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+    color: var(--mets-blue);
+  }
+  .pct-help {
+    font-size: 11px;
+    color: var(--text-light);
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ============= STATS TABLE ============= */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    max-height: 460px;
+    overflow-y: auto;
+  }
+  table.stats {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  table.stats thead th {
+    background: #F3F4F6;
+    color: var(--text);
+    text-align: right;
+    padding: 10px 8px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 2px solid var(--border);
+    cursor: pointer;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  table.stats thead th:first-child,
+  table.stats thead th:nth-child(2) { text-align: left; }
+  table.stats thead th:hover { background: #E5E7EB; }
+  table.stats thead th::after {
+    content: " ↕";
+    color: var(--text-light);
+    font-size: 9px;
+    margin-left: 2px;
+  }
+  table.stats tbody td {
+    padding: 8px;
+    text-align: right;
+    border-bottom: 1px solid #F3F4F6;
+    font-family: var(--num-font);
+    font-size: 12px;
+  }
+  table.stats tbody td:first-child,
+  table.stats tbody td:nth-child(2) {
+    text-align: left;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
+  table.stats tbody tr:hover { background: #FFF7ED; }
+  table.stats tbody tr.career-total {
+    background: #FFEDD5;
+    font-weight: 700;
+  }
+  table.stats tbody tr.career-total td {
+    border-top: 2px solid var(--mets-orange);
+    border-bottom: none;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .leader-cell {
+    color: var(--mets-orange);
+    font-weight: 700;
+  }
+
+  /* ============= SIDEBAR ============= */
+  .sidebar-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .sidebar-stat:last-child { border-bottom: none; }
+  .sidebar-stat .lbl { color: var(--text-muted); }
+  .sidebar-stat .val {
+    font-family: var(--num-font);
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .similar-player {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    color: var(--text);
+  }
+  .similar-player:last-child { border-bottom: none; }
+  .similar-player:hover .name { color: var(--mets-orange); }
+  .sim-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--mets-blue);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .sim-avatar.mets { background: var(--mets-orange); }
+  .sim-info { flex: 1; min-width: 0; }
+  .sim-info .name { font-size: 13px; font-weight: 600; }
+  .sim-info .meta { font-size: 11px; color: var(--text-muted); }
+  .sim-score {
+    font-family: var(--num-font);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  .award-item {
+    display: flex;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+  }
+  .award-item:last-child { border-bottom: none; }
+  .award-year {
+    font-family: var(--num-font);
+    color: var(--mets-orange);
+    font-weight: 700;
+    flex-shrink: 0;
+    width: 44px;
+  }
+
+  .footer {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    color: var(--text-muted);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============= TOP BAR ============= -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">ULTIMATE<span>METS</span></div>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="player-prototype-react.html" class="active">Players</a>
+      <a href="season-prototype-react.html">Seasons</a>
+      <a href="game-prototype-react.html">Games</a>
+      <a href="leaders-prototype-react.html">Leaders</a>
+      <a href="postseason-prototype-react.html">Postseason</a>
+      <a href="comparison-prototype-react.html">Lab</a>
+      <a href="media-prototype-react.html">Media</a>
+    </nav>
+    <div class="nav-tools">
+      <input class="search" type="text" placeholder="Search players, seasons, games...">
+      <a class="signin" href="#">Sign In</a>
+    </div>
+  </div>
+</header>
+
+<!-- ============= PLAYER HEADER ============= -->
+<section class="player-header">
+  <div class="player-header-inner">
+    <div class="player-photo">DW</div>
+    <div class="player-info">
+      <h1>David Wright<span class="number">#5</span></h1>
+      <div class="player-meta">
+        <span><strong>3B</strong></span>
+        <span>Bats: <strong>R</strong></span>
+        <span>Throws: <strong>R</strong></span>
+        <span>6'0", 200 lb</span>
+        <span>Born: <strong>Dec 20, 1982</strong> · Norfolk, VA</span>
+        <span>Debut: <strong>Jul 21, 2004</strong></span>
+        <span>14 seasons (all NYM)</span>
+      </div>
+      <div class="player-honors">
+        <span class="badge">7× All-Star</span>
+        <span class="badge">2× Silver Slugger</span>
+        <span class="badge">2× Gold Glove</span>
+        <span class="badge">Mets Captain</span>
+        <span class="badge">Mets Hall of Fame</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============= TABS ============= -->
+<nav class="tabs">
+  <div class="tabs-inner">
+    <a class="tab active" href="#">Profile</a>
+    <a class="tab" href="#">Standard</a>
+    <a class="tab" href="#">Advanced</a>
+    <a class="tab" href="#">Splits</a>
+    <a class="tab" href="#">Game Logs</a>
+    <a class="tab" href="#">Postseason</a>
+    <a class="tab" href="#">Awards</a>
+    <a class="tab" href="#">Media</a>
+  </div>
+</nav>
+
+<!-- ============= MAIN ============= -->
+<main class="main">
+  <div class="content">
+
+    <!-- Career Arc Chart -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Career Arc · bWAR by Season</div>
+        <div class="card-action">Switch metric ▾</div>
+      </div>
+      <div class="chart-container">
+        <canvas id="careerChart"></canvas>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#FF5910"></div>David Wright bWAR</div>
+        <div class="legend-item"><div class="legend-line" style="border-color:#002D72"></div>League Avg 3B</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#9CA3AF"></div>Replacement Level (0)</div>
+      </div>
+    </div>
+
+    <!-- Percentile Bubbles -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Career Percentile Rankings · vs. all 3B since 1962</div>
+        <div class="card-action">ⓘ how is this calculated</div>
+      </div>
+
+      <div class="pct-row">
+        <div class="pct-label">Hits</div>
+        <div class="pct-bar-track"><div class="pct-bar-marker" style="left:94%"></div></div>
+        <div class="pct-value">94</div>
+      </div>
+      <div class="pct-row">
+        <div class="pct-label">On-Base %</div>
+        <div class="pct-bar-track"><div class="pct-bar-marker" style="left:88%"></div></div>
+        <div class="pct-value">88</div>
+      </div>
+      <div class="pct-row">
+        <div class="pct-label">wRC+</div>
+        <div class="pct-bar-track"><div class="pct-bar-marker" style="left:85%"></div></div>
+        <div class="pct-value">85</div>
+      </div>
+      <div class="pct-row">
+        <div class="pct-label">bWAR</div>
+        <div class="pct-bar-track"><div class="pct-bar-marker" style="left:82%"></div></div>
+        <div class="pct-value">82</div>
+      </div>
+      <div class="pct-row">
+        <div class="pct-label">Stolen Bases</div>
+        <div class="pct-bar-track"><div class="pct-bar-marker" style="left:67%"></div></div>
+        <div class="pct-value">67</div>
+      </div>
+      <div class="pct-row">
+        <div class="pct-label">Defensive Runs</div>
+        <div class="pct-bar-track"><div class="pct-bar-marker" style="left:54%"></div></div>
+        <div class="pct-value">54</div>
+      </div>
+      <div class="pct-row">
+        <div class="pct-label">Strikeout Rate</div>
+        <div class="pct-bar-track"><div class="pct-bar-marker" style="left:42%"></div></div>
+        <div class="pct-value">42</div>
+      </div>
+
+      <div class="pct-help">
+        <span>← Lower (Worse)</span>
+        <span>50 = League Avg</span>
+        <span>Higher (Better) →</span>
+      </div>
+    </div>
+
+    <!-- Year-by-Year -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Year-by-Year Standard Batting</div>
+        <div class="card-action">Share & Export ▾</div>
+      </div>
+      <div class="table-wrap">
+        <table class="stats">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Age</th>
+              <th>G</th>
+              <th>PA</th>
+              <th>HR</th>
+              <th>RBI</th>
+              <th>SB</th>
+              <th>BB%</th>
+              <th>K%</th>
+              <th>AVG</th>
+              <th>OBP</th>
+              <th>SLG</th>
+              <th>OPS</th>
+              <th>wRC+</th>
+              <th>bWAR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>2004</td><td>21</td><td>69</td><td>283</td><td>14</td><td>40</td><td>6</td><td>5.7</td><td>14.5</td><td>.293</td><td>.332</td><td>.525</td><td>.857</td><td>129</td><td>1.6</td></tr>
+            <tr><td>2005</td><td>22</td><td>160</td><td>695</td><td>27</td><td>102</td><td>17</td><td>10.5</td><td>16.4</td><td>.306</td><td>.388</td><td>.523</td><td>.911</td><td>140</td><td>6.4</td></tr>
+            <tr><td>2006</td><td>23</td><td>154</td><td>662</td><td>26</td><td>116</td><td>20</td><td>10.6</td><td>17.7</td><td>.311</td><td>.381</td><td>.531</td><td>.912</td><td>137</td><td>6.4</td></tr>
+            <tr><td>2007</td><td>24</td><td>160</td><td>711</td><td><span class="leader-cell">30</span></td><td>107</td><td><span class="leader-cell">34</span></td><td>13.5</td><td>16.6</td><td>.325</td><td>.416</td><td>.546</td><td>.963</td><td><span class="leader-cell">150</span></td><td><span class="leader-cell">8.3</span></td></tr>
+            <tr><td>2008</td><td>25</td><td>160</td><td>736</td><td>33</td><td>124</td><td>15</td><td>12.4</td><td>15.4</td><td>.302</td><td>.390</td><td>.534</td><td>.924</td><td>140</td><td>7.0</td></tr>
+            <tr><td>2009</td><td>26</td><td>144</td><td>618</td><td>10</td><td>72</td><td>27</td><td>12.6</td><td>22.0</td><td>.307</td><td>.390</td><td>.447</td><td>.837</td><td>129</td><td>4.1</td></tr>
+            <tr><td>2010</td><td>27</td><td>157</td><td>670</td><td>29</td><td>103</td><td>19</td><td>10.0</td><td>23.6</td><td>.283</td><td>.354</td><td>.503</td><td>.856</td><td>129</td><td>3.7</td></tr>
+            <tr><td>2011</td><td>28</td><td>102</td><td>447</td><td>14</td><td>61</td><td>13</td><td>13.4</td><td>20.4</td><td>.254</td><td>.345</td><td>.427</td><td>.771</td><td>118</td><td>2.3</td></tr>
+            <tr><td>2012</td><td>29</td><td>156</td><td>670</td><td>21</td><td>93</td><td>15</td><td>10.6</td><td>17.9</td><td>.306</td><td>.391</td><td>.492</td><td>.883</td><td>141</td><td>6.7</td></tr>
+            <tr><td>2013</td><td>30</td><td>112</td><td>490</td><td>18</td><td>58</td><td>17</td><td>10.8</td><td>17.8</td><td>.307</td><td>.390</td><td>.514</td><td>.904</td><td>147</td><td>5.1</td></tr>
+            <tr><td>2014</td><td>31</td><td>134</td><td>586</td><td>8</td><td>63</td><td>8</td><td>9.6</td><td>17.6</td><td>.269</td><td>.324</td><td>.374</td><td>.698</td><td>100</td><td>1.9</td></tr>
+            <tr><td>2015</td><td>32</td><td>38</td><td>170</td><td>5</td><td>17</td><td>2</td><td>11.2</td><td>15.3</td><td>.289</td><td>.379</td><td>.434</td><td>.813</td><td>132</td><td>0.8</td></tr>
+            <tr><td>2016</td><td>33</td><td>37</td><td>164</td><td>7</td><td>14</td><td>1</td><td>10.4</td><td>20.7</td><td>.226</td><td>.350</td><td>.438</td><td>.788</td><td>114</td><td>0.4</td></tr>
+            <tr><td>2018</td><td>35</td><td>2</td><td>9</td><td>0</td><td>1</td><td>0</td><td>0.0</td><td>33.3</td><td>.000</td><td>.000</td><td>.000</td><td>.000</td><td>-100</td><td>-0.1</td></tr>
+            <tr class="career-total">
+              <td>Career</td><td>—</td><td>1585</td><td>6911</td><td>242</td><td>970</td><td>196</td><td>11.0</td><td>18.5</td><td>.296</td><td>.376</td><td>.491</td><td>.867</td><td>133</td><td>54.6</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============= SIDEBAR ============= -->
+  <aside class="sidebar">
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Career Totals</div></div>
+      <div class="sidebar-stat"><span class="lbl">Games</span><span class="val">1,585</span></div>
+      <div class="sidebar-stat"><span class="lbl">Hits</span><span class="val">1,777</span></div>
+      <div class="sidebar-stat"><span class="lbl">Home Runs</span><span class="val">242</span></div>
+      <div class="sidebar-stat"><span class="lbl">RBI</span><span class="val">970</span></div>
+      <div class="sidebar-stat"><span class="lbl">Stolen Bases</span><span class="val">196</span></div>
+      <div class="sidebar-stat"><span class="lbl">Slash Line</span><span class="val">.296/.376/.491</span></div>
+      <div class="sidebar-stat"><span class="lbl">OPS+</span><span class="val">133</span></div>
+      <div class="sidebar-stat"><span class="lbl">bWAR</span><span class="val">54.6</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Similar Players</div>
+        <div class="card-action">view all</div>
+      </div>
+      <a class="similar-player" href="#">
+        <div class="sim-avatar">SR</div>
+        <div class="sim-info">
+          <div class="name">Scott Rolen</div>
+          <div class="meta">3B · 1996–2012 · 70.1 bWAR</div>
+        </div>
+        <div class="sim-score">972</div>
+      </a>
+      <a class="similar-player" href="#">
+        <div class="sim-avatar">RS</div>
+        <div class="sim-info">
+          <div class="name">Ron Santo</div>
+          <div class="meta">3B · 1960–1974 · 70.5 bWAR</div>
+        </div>
+        <div class="sim-score">951</div>
+      </a>
+      <a class="similar-player" href="#">
+        <div class="sim-avatar">EM</div>
+        <div class="sim-info">
+          <div class="name">Edgar Martinez</div>
+          <div class="meta">DH · 1987–2004 · 68.4 bWAR</div>
+        </div>
+        <div class="sim-score">948</div>
+      </a>
+      <a class="similar-player" href="#">
+        <div class="sim-avatar mets">HJ</div>
+        <div class="sim-info">
+          <div class="name">Howard Johnson</div>
+          <div class="meta">3B · 1982–1995 · 35.9 bWAR</div>
+        </div>
+        <div class="sim-score">935</div>
+      </a>
+      <a class="similar-player" href="#">
+        <div class="sim-avatar">EL</div>
+        <div class="sim-info">
+          <div class="name">Evan Longoria</div>
+          <div class="meta">3B · 2008–2023 · 58.8 bWAR</div>
+        </div>
+        <div class="sim-score">924</div>
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Awards & Honors</div></div>
+      <div class="award-item"><span class="award-year">2007</span><span>NL Silver Slugger · NL Gold Glove · All-Star</span></div>
+      <div class="award-item"><span class="award-year">2008</span><span>NL Silver Slugger · NL Gold Glove · All-Star</span></div>
+      <div class="award-item"><span class="award-year">2009</span><span>NL All-Star</span></div>
+      <div class="award-item"><span class="award-year">2010</span><span>NL All-Star</span></div>
+      <div class="award-item"><span class="award-year">2012</span><span>NL All-Star · MVP (6th)</span></div>
+      <div class="award-item"><span class="award-year">2013</span><span>NL All-Star · Mets Captain</span></div>
+      <div class="award-item"><span class="award-year">2022</span><span>Mets Hall of Fame</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Postseason Snapshot</div></div>
+      <div class="sidebar-stat"><span class="lbl">Series Played</span><span class="val">3</span></div>
+      <div class="sidebar-stat"><span class="lbl">Games</span><span class="val">17</span></div>
+      <div class="sidebar-stat"><span class="lbl">Slash Line</span><span class="val">.231/.317/.354</span></div>
+      <div class="sidebar-stat"><span class="lbl">HR</span><span class="val">1</span></div>
+      <div class="sidebar-stat"><span class="lbl">2015 WS</span><span class="val">.208 / 1 HR</span></div>
+    </div>
+
+  </aside>
+</main>
+
+<footer class="footer">
+  Prototype · Ultimate Mets Database redesign · Statistics shown are illustrative for design purposes only
+</footer>
+
+<script>
+  const ctx = document.getElementById('careerChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018'],
+      datasets: [
+        {
+          label: 'David Wright bWAR',
+          data: [1.6, 6.4, 6.4, 8.3, 7.0, 4.1, 3.7, 2.3, 6.7, 5.1, 1.9, 0.8, 0.4, null, -0.1],
+          borderColor: '#FF5910',
+          backgroundColor: 'rgba(255,89,16,0.12)',
+          borderWidth: 3,
+          tension: 0.35,
+          pointRadius: 5,
+          pointHoverRadius: 8,
+          pointBackgroundColor: '#FF5910',
+          pointBorderColor: 'white',
+          pointBorderWidth: 2,
+          fill: true,
+          spanGaps: true,
+        },
+        {
+          label: 'League Avg 3B',
+          data: [2.2, 2.3, 2.1, 2.4, 2.0, 2.2, 2.1, 2.0, 2.3, 2.2, 2.1, 2.0, 2.1, 2.2, 2.1],
+          borderColor: '#002D72',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false,
+          tension: 0.4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#111827',
+          titleFont: { weight: 'bold', size: 13 },
+          bodyFont: { size: 12 },
+          padding: 12,
+          cornerRadius: 6,
+          callbacks: {
+            label: function(c) {
+              if (c.parsed.y === null) return c.dataset.label + ': DNP (injury)';
+              return c.dataset.label + ': ' + c.parsed.y.toFixed(1);
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          title: { display: true, text: 'bWAR', font: {size: 11, weight: 600}, color: '#6B7280' },
+          grid: { color: '#F3F4F6' },
+          ticks: { font: { family: "'Roboto Mono'", size: 11 }, color: '#6B7280' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: "'Roboto Mono'", size: 11 }, color: '#6B7280' }
+        }
+      }
+    }
+  });
+</script>
+
+<!-- ===== Cross-page UX helpers (breadcrumb + recent-tracker + .linkable styles) ===== -->
+<script>
+(function() {
+  var FILES = {
+    'index.html':                     { section: 'home',       name: 'Home' },
+    'player-prototype-react.html':    { section: 'players',    name: 'Players' },
+    'player-prototype.html':          { section: 'players',    name: 'Players' },
+    'season-prototype-react.html':    { section: 'seasons',    name: 'Seasons' },
+    'game-prototype-react.html':      { section: 'games',      name: 'Games' },
+    'leaders-prototype-react.html':   { section: 'leaders',    name: 'Leaders' },
+    'postseason-prototype-react.html':{ section: 'postseason', name: 'Postseason' },
+    'comparison-prototype-react.html':{ section: 'lab',        name: 'Lab' },
+    'media-prototype-react.html':     { section: 'media',      name: 'Media' },
+  };
+  var here = location.pathname.split('/').pop() || 'index.html';
+  var hereInfo = FILES[here] || { section: 'other', name: 'Page' };
+  var hereTitle = (document.title.split(' | ')[0].split(' · ')[0]).trim();
+
+  try {
+    var style = document.createElement('style');
+    style.textContent = '.linkable{cursor:pointer;transition:color 0.1s;}.linkable:hover{color:#FF5910!important;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#FF5910;}tr.linkable-row{cursor:pointer;}tr.linkable-row:hover{background:#FFF7ED!important;}tr.linkable-row:hover td:first-child{color:#FF5910;}.linkable-card{cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;}.linkable-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.08);border-color:#FF5910!important;}';
+    document.head.appendChild(style);
+  } catch (e) {}
+
+  try {
+    if (here !== 'index.html') {
+      var item = { section: hereInfo.section, title: hereTitle, href: here, at: Date.now() };
+      var recent = JSON.parse(localStorage.getItem('mets_recent') || '[]');
+      recent = [item].concat(recent.filter(function(r){ return r.href !== here; })).slice(0, 8);
+      localStorage.setItem('mets_recent', JSON.stringify(recent));
+    }
+  } catch (e) {}
+
+  try {
+    if (!document.referrer) return;
+    var refUrl = new URL(document.referrer);
+    if (refUrl.origin !== location.origin) return;
+    var refFile = refUrl.pathname.split('/').pop() || 'index.html';
+    if (refFile === here) return;
+    var fromInfo = FILES[refFile];
+    if (!fromInfo) return;
+    var banner = document.createElement('div');
+    banner.style.cssText = 'background:#FFF7ED;border-bottom:1px solid #FED7AA;padding:7px 24px;font-size:12px;display:flex;align-items:center;gap:8px;font-family:Inter,system-ui,sans-serif;flex-wrap:wrap;';
+    banner.innerHTML = '<a href="' + document.referrer + '" style="color:#FF5910;text-decoration:none;font-weight:600;">← Back to ' + fromInfo.name + '</a><span style="color:#9CA3AF;margin-left:auto;font-size:11.5px;">You are here: <strong style="color:#111827;">' + hereTitle + '</strong></span>';
+    document.body.insertBefore(banner, document.body.firstChild);
+  } catch (e) {}
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>David Wright | Ultimate Mets Database (React)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<!-- React + Babel + Chart.js via CDN, no build step needed -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  :root {
+    --mets-blue: #002D72;
+    --mets-blue-dark: #001A4A;
+    --mets-orange: #FF5910;
+    --mets-orange-light: #FF7A3D;
+    --bg: #FAFAFA;
+    --surface: #FFFFFF;
+    --border: #E5E7EB;
+    --text: #111827;
+    --text-muted: #6B7280;
+    --text-light: #9CA3AF;
+    --num-font: 'Roboto Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.5;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+  /* TopBar */
+  .topbar { background: var(--mets-blue); color: white; border-bottom: 3px solid var(--mets-orange); }
+  .topbar-inner { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; padding: 0 24px; height: 56px; }
+  .logo { font-weight: 800; font-size: 18px; color: var(--mets-orange); letter-spacing: -0.02em; }
+  .logo span { color: white; }
+  .nav { display: flex; gap: 4px; margin-left: 40px; flex: 1; }
+  .nav button { color: white; padding: 8px 14px; font-size: 13px; font-weight: 500; border-radius: 6px; transition: background 0.15s; }
+  .nav button:hover { background: rgba(255,255,255,0.1); }
+  .nav button.active { background: var(--mets-orange); }
+  .nav-tools { display: flex; gap: 12px; align-items: center; }
+  .search { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 7px 12px; border-radius: 6px; font-size: 13px; width: 240px; outline: none; }
+  .search::placeholder { color: rgba(255,255,255,0.6); }
+  .search:focus { border-color: var(--mets-orange); }
+  .signin { background: var(--mets-orange); color: white; padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+  .signin:hover { background: var(--mets-orange-light); }
+
+  /* Player Header */
+  .player-header { background: linear-gradient(135deg, var(--mets-blue) 0%, var(--mets-blue-dark) 100%); color: white; padding: 32px 0 28px; position: relative; overflow: hidden; }
+  .player-header::after { content: ''; position: absolute; right: -100px; top: -100px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,89,16,0.15) 0%, transparent 60%); pointer-events: none; }
+  .player-header-inner { max-width: 1400px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 32px; position: relative; z-index: 1; }
+  .player-photo { width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--mets-orange), var(--mets-orange-light)); display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 800; color: white; flex-shrink: 0; border: 4px solid white; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+  .player-info h1 { font-size: 38px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+  .player-info h1 .number { color: var(--mets-orange); font-size: 28px; margin-left: 10px; font-weight: 700; }
+  .player-meta { display: flex; gap: 22px; margin-top: 12px; font-size: 13px; color: rgba(255,255,255,0.8); flex-wrap: wrap; }
+  .player-meta strong { color: white; font-weight: 600; }
+  .player-honors { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge { background: rgba(255,89,16,0.2); color: #FFD4BC; padding: 5px 11px; border-radius: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; border: 1px solid rgba(255,89,16,0.4); }
+
+  /* Tabs */
+  .tabs { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+  .tabs-inner { max-width: 1400px; margin: 0 auto; padding: 0 24px; display: flex; overflow-x: auto; }
+  .tab { padding: 14px 18px; color: var(--text-muted); font-size: 13px; font-weight: 500; border-bottom: 3px solid transparent; white-space: nowrap; transition: all 0.15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--mets-blue); border-bottom-color: var(--mets-orange); font-weight: 700; }
+
+  /* Layout */
+  .main { max-width: 1400px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+  @media (max-width: 1024px) { .main { grid-template-columns: 1fr; } }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .card-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .card-action { font-size: 12px; color: var(--text-muted); }
+  .card-action:hover { color: var(--mets-orange); }
+
+  /* Chart */
+  .chart-container { height: 280px; position: relative; }
+  .chart-legend { display: flex; gap: 18px; margin-top: 14px; font-size: 12px; color: var(--text-muted); flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .legend-line { width: 14px; height: 2px; border-top: 2px dashed; }
+
+  /* Percentile Bubbles */
+  .pct-row { display: grid; grid-template-columns: 150px 1fr 50px; align-items: center; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .pct-row:last-of-type { border-bottom: none; }
+  .pct-label { font-size: 12.5px; font-weight: 500; color: var(--text); }
+  .pct-bar-track { position: relative; height: 8px; background: linear-gradient(90deg, #3B82F6 0%, #93C5FD 30%, #E5E7EB 50%, #FCA5A5 70%, #EF4444 100%); border-radius: 4px; }
+  .pct-bar-marker { position: absolute; top: -5px; width: 18px; height: 18px; background: white; border: 3px solid var(--mets-blue); border-radius: 50%; transform: translateX(-50%); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+  .pct-value { font-family: var(--num-font); font-size: 14px; font-weight: 600; text-align: right; color: var(--mets-blue); }
+  .pct-help { font-size: 11px; color: var(--text-light); margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
+
+  /* Stats Table */
+  .table-wrap { overflow-x: auto; border-radius: 6px; border: 1px solid var(--border); max-height: 460px; overflow-y: auto; }
+  table.stats { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.stats thead th { background: #F3F4F6; color: var(--text); text-align: right; padding: 10px 8px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 2px solid var(--border); cursor: pointer; white-space: nowrap; position: sticky; top: 0; z-index: 1; user-select: none; }
+  table.stats thead th:first-child, table.stats thead th:nth-child(2) { text-align: left; }
+  table.stats thead th:hover { background: #E5E7EB; }
+  table.stats thead th .sort-arrow { color: var(--text-light); font-size: 9px; margin-left: 2px; }
+  table.stats thead th.sorted .sort-arrow { color: var(--mets-orange); }
+  table.stats tbody td { padding: 8px; text-align: right; border-bottom: 1px solid #F3F4F6; font-family: var(--num-font); font-size: 12px; }
+  table.stats tbody td:first-child, table.stats tbody td:nth-child(2) { text-align: left; font-family: 'Inter', sans-serif; font-weight: 500; }
+  table.stats tbody tr:hover { background: #FFF7ED; }
+  table.stats tbody tr.career-total { background: #FFEDD5; font-weight: 700; }
+  table.stats tbody tr.career-total td { border-top: 2px solid var(--mets-orange); border-bottom: none; padding-top: 10px; padding-bottom: 10px; }
+  .leader-cell { color: var(--mets-orange); font-weight: 700; }
+
+  /* Sidebar */
+  .sidebar-stat { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .sidebar-stat:last-child { border-bottom: none; }
+  .sidebar-stat .lbl { color: var(--text-muted); }
+  .sidebar-stat .val { font-family: var(--num-font); font-weight: 600; color: var(--text); }
+
+  .similar-player { display: flex; align-items: center; gap: 11px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .similar-player:last-child { border-bottom: none; }
+  .similar-player:hover .name { color: var(--mets-orange); }
+  .sim-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--mets-blue); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .sim-avatar.mets { background: var(--mets-orange); }
+  .sim-info { flex: 1; min-width: 0; }
+  .sim-info .name { font-size: 13px; font-weight: 600; }
+  .sim-info .meta { font-size: 11px; color: var(--text-muted); }
+  .sim-score { font-family: var(--num-font); font-size: 12px; font-weight: 600; color: var(--text-muted); }
+
+  .award-item { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .award-item:last-child { border-bottom: none; }
+  .award-year { font-family: var(--num-font); color: var(--mets-orange); font-weight: 700; flex-shrink: 0; width: 44px; }
+
+  .footer { max-width: 1400px; margin: 0 auto; padding: 32px 24px; color: var(--text-muted); font-size: 12px; border-top: 1px solid var(--border); text-align: center; }
+
+  /* ============= USER MENU ============= */
+  .user-menu { position: relative; }
+  .user-avatar-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--mets-orange); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; border: 2px solid rgba(255,255,255,0.3); }
+  .user-avatar-btn:hover { border-color: white; }
+  .user-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; padding: 6px; min-width: 220px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 50; }
+  .user-dropdown-header { padding: 12px 12px 10px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+  .user-dropdown-name { font-weight: 600; font-size: 14px; color: var(--text); }
+  .user-dropdown-handle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .user-dropdown button { display: block; width: 100%; text-align: left; padding: 8px 12px; font-size: 13px; color: var(--text); border-radius: 4px; }
+  .user-dropdown button:hover { background: #F3F4F6; }
+  .user-dropdown .signout { color: var(--mets-orange); font-weight: 500; }
+
+  /* ============= MODAL ============= */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; backdrop-filter: blur(4px); }
+  .modal { background: white; border-radius: 12px; padding: 32px; width: 400px; max-width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .modal-title { font-size: 22px; font-weight: 800; color: var(--mets-blue); margin-bottom: 6px; letter-spacing: -0.02em; }
+  .modal-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.5; }
+  .modal-label { display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .modal-input { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-family: inherit; font-size: 14px; outline: none; margin-bottom: 16px; }
+  .modal-input:focus { border-color: var(--mets-orange); box-shadow: 0 0 0 3px rgba(255,89,16,0.1); }
+  .modal-submit { width: 100%; background: var(--mets-orange); color: white; padding: 11px; border-radius: 6px; font-size: 14px; font-weight: 600; }
+  .modal-submit:hover { background: var(--mets-orange-light); }
+  .modal-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .modal-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0; font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.06em; }
+  .modal-divider::before, .modal-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .oauth-row { display: flex; gap: 8px; }
+  .oauth-btn { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .oauth-btn:hover { background: #F9FAFB; border-color: var(--mets-blue); }
+  .modal-note { font-size: 11px; color: var(--text-light); text-align: center; margin-top: 16px; }
+  .modal-close { position: absolute; top: 14px; right: 14px; width: 28px; height: 28px; border-radius: 50%; color: var(--text-muted); font-size: 18px; }
+  .modal-close:hover { background: #F3F4F6; }
+  .modal { position: relative; }
+
+  /* ============= SHARE BUTTON ============= */
+  .header-actions { position: absolute; top: 24px; right: 24px; display: flex; gap: 8px; z-index: 2; }
+  .header-action-btn { background: rgba(255,255,255,0.12); color: white; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; gap: 6px; backdrop-filter: blur(4px); }
+  .header-action-btn:hover { background: rgba(255,255,255,0.22); }
+  .header-action-btn.primary { background: var(--mets-orange); border-color: var(--mets-orange); }
+  .header-action-btn.primary:hover { background: var(--mets-orange-light); }
+  .share-wrap { position: relative; }
+  .share-popover { position: absolute; top: calc(100% + 8px); right: 0; background: white; border-radius: 8px; padding: 6px; min-width: 240px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); color: var(--text); z-index: 30; }
+  .share-popover button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border-radius: 4px; font-size: 13px; text-align: left; }
+  .share-popover button:hover { background: #F3F4F6; }
+  .share-icon { width: 22px; text-align: center; font-size: 14px; }
+  .share-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--mets-blue); color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 200; animation: slideUp 0.25s ease-out; }
+  @keyframes slideUp { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+  /* ============= COMMENTS ============= */
+  .comments-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .comments-count { font-size: 13px; color: var(--text-muted); }
+  .comments-count strong { color: var(--text); font-weight: 700; }
+  .comments-sort { display: flex; gap: 2px; font-size: 12px; }
+  .comments-sort button { padding: 5px 10px; border-radius: 4px; color: var(--text-muted); }
+  .comments-sort button.active { background: #FFEDD5; color: var(--mets-orange); font-weight: 600; }
+
+  .comment-form { margin-bottom: 18px; padding: 14px; background: #F9FAFB; border-radius: 8px; border: 1px solid var(--border); }
+  .comment-form-top { display: flex; gap: 12px; align-items: flex-start; }
+  .comment-form textarea { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-family: inherit; font-size: 13.5px; resize: vertical; min-height: 70px; outline: none; line-height: 1.5; }
+  .comment-form textarea:focus { border-color: var(--mets-orange); box-shadow: 0 0 0 3px rgba(255,89,16,0.08); }
+  .comment-form-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 12px; padding-left: 48px; flex-wrap: wrap; }
+  .comment-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .comment-tag-pick { padding: 4px 10px; border-radius: 14px; font-size: 11px; border: 1px solid var(--border); background: white; font-weight: 500; color: var(--text-muted); }
+  .comment-tag-pick:hover { border-color: var(--mets-blue); }
+  .comment-tag-pick.active { background: var(--mets-orange); color: white; border-color: var(--mets-orange); }
+  .comment-post-btn { background: var(--mets-orange); color: white; padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+  .comment-post-btn:hover { background: var(--mets-orange-light); }
+  .comment-post-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .comment-prompt { padding: 18px; background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); border-radius: 8px; border: 1px solid #FED7AA; text-align: center; font-size: 13px; color: var(--text); margin-bottom: 18px; }
+  .comment-prompt strong { color: var(--mets-orange); cursor: pointer; font-weight: 700; }
+  .comment-prompt strong:hover { text-decoration: underline; }
+
+  .comment { display: flex; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+  .comment:last-child { border-bottom: none; padding-bottom: 4px; }
+  .comment-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 12px; }
+  .comment-body { flex: 1; min-width: 0; }
+  .comment-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
+  .comment-user { font-weight: 600; font-size: 13px; }
+  .comment-time { font-size: 11px; color: var(--text-muted); }
+  .comment-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #DBEAFE; color: var(--mets-blue); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .comment-text { font-size: 13.5px; color: var(--text); line-height: 1.55; word-wrap: break-word; }
+  .comment-actions { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+  .comment-action { display: flex; align-items: center; gap: 4px; }
+  .comment-action:hover { color: var(--mets-orange); }
+  .comment-action.liked { color: var(--mets-orange); font-weight: 600; }
+  .comment-action.danger:hover { color: #EF4444; }
+
+  @media (max-width: 768px) {
+    .header-actions { position: static; margin-top: 16px; }
+    .player-header-inner { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+  // Force Babel's classic JSX runtime so it emits React.createElement (using the
+  // global UMD React) instead of an `import "react/jsx-runtime"` the browser can't
+  // resolve without a bundler.
+  Babel.registerPreset('react-classic', {
+    presets: [[Babel.availablePresets['react'], { runtime: 'classic' }]],
+  });
+</script>
+<script type="text/babel" data-presets="react-classic">
+const { useState, useEffect, useRef, useMemo } = React;
+
+/* ============================================================
+ * DATA — in real app this comes from /api/players/:id
+ * ============================================================ */
+const PLAYER = {
+  name: 'David Wright',
+  number: 5,
+  initials: 'DW',
+  position: '3B',
+  bats: 'R',
+  throws: 'R',
+  height: "6'0\"",
+  weight: '200 lb',
+  born: 'Dec 20, 1982',
+  birthplace: 'Norfolk, VA',
+  debut: 'Jul 21, 2004',
+  seasons: '14 seasons (all NYM)',
+  honors: ['7× All-Star', '2× Silver Slugger', '2× Gold Glove', 'Mets Captain', 'Mets Hall of Fame'],
+};
+
+const CAREER_TOTALS = [
+  ['Games', '1,585'], ['Hits', '1,777'], ['Home Runs', '242'], ['RBI', '970'],
+  ['Stolen Bases', '196'], ['Slash Line', '.296/.376/.491'], ['OPS+', '133'], ['bWAR', '54.6'],
+];
+
+const PERCENTILES = [
+  { label: 'Hits', value: 94 },
+  { label: 'On-Base %', value: 88 },
+  { label: 'wRC+', value: 85 },
+  { label: 'bWAR', value: 82 },
+  { label: 'Stolen Bases', value: 67 },
+  { label: 'Defensive Runs', value: 54 },
+  { label: 'Strikeout Rate', value: 42 },
+];
+
+const SEASONS = [
+  { Year: 2004, Age: 21, G: 69,  PA: 283, HR: 14, RBI: 40,  SB: 6,  'BB%': 5.7,  'K%': 14.5, AVG: .293, OBP: .332, SLG: .525, OPS: .857, 'wRC+': 129, bWAR: 1.6 },
+  { Year: 2005, Age: 22, G: 160, PA: 695, HR: 27, RBI: 102, SB: 17, 'BB%': 10.5, 'K%': 16.4, AVG: .306, OBP: .388, SLG: .523, OPS: .911, 'wRC+': 140, bWAR: 6.4 },
+  { Year: 2006, Age: 23, G: 154, PA: 662, HR: 26, RBI: 116, SB: 20, 'BB%': 10.6, 'K%': 17.7, AVG: .311, OBP: .381, SLG: .531, OPS: .912, 'wRC+': 137, bWAR: 6.4 },
+  { Year: 2007, Age: 24, G: 160, PA: 711, HR: 30, RBI: 107, SB: 34, 'BB%': 13.5, 'K%': 16.6, AVG: .325, OBP: .416, SLG: .546, OPS: .963, 'wRC+': 150, bWAR: 8.3, leaders: ['HR','SB','wRC+','bWAR'] },
+  { Year: 2008, Age: 25, G: 160, PA: 736, HR: 33, RBI: 124, SB: 15, 'BB%': 12.4, 'K%': 15.4, AVG: .302, OBP: .390, SLG: .534, OPS: .924, 'wRC+': 140, bWAR: 7.0 },
+  { Year: 2009, Age: 26, G: 144, PA: 618, HR: 10, RBI: 72,  SB: 27, 'BB%': 12.6, 'K%': 22.0, AVG: .307, OBP: .390, SLG: .447, OPS: .837, 'wRC+': 129, bWAR: 4.1 },
+  { Year: 2010, Age: 27, G: 157, PA: 670, HR: 29, RBI: 103, SB: 19, 'BB%': 10.0, 'K%': 23.6, AVG: .283, OBP: .354, SLG: .503, OPS: .856, 'wRC+': 129, bWAR: 3.7 },
+  { Year: 2011, Age: 28, G: 102, PA: 447, HR: 14, RBI: 61,  SB: 13, 'BB%': 13.4, 'K%': 20.4, AVG: .254, OBP: .345, SLG: .427, OPS: .771, 'wRC+': 118, bWAR: 2.3 },
+  { Year: 2012, Age: 29, G: 156, PA: 670, HR: 21, RBI: 93,  SB: 15, 'BB%': 10.6, 'K%': 17.9, AVG: .306, OBP: .391, SLG: .492, OPS: .883, 'wRC+': 141, bWAR: 6.7 },
+  { Year: 2013, Age: 30, G: 112, PA: 490, HR: 18, RBI: 58,  SB: 17, 'BB%': 10.8, 'K%': 17.8, AVG: .307, OBP: .390, SLG: .514, OPS: .904, 'wRC+': 147, bWAR: 5.1 },
+  { Year: 2014, Age: 31, G: 134, PA: 586, HR: 8,  RBI: 63,  SB: 8,  'BB%': 9.6,  'K%': 17.6, AVG: .269, OBP: .324, SLG: .374, OPS: .698, 'wRC+': 100, bWAR: 1.9 },
+  { Year: 2015, Age: 32, G: 38,  PA: 170, HR: 5,  RBI: 17,  SB: 2,  'BB%': 11.2, 'K%': 15.3, AVG: .289, OBP: .379, SLG: .434, OPS: .813, 'wRC+': 132, bWAR: 0.8 },
+  { Year: 2016, Age: 33, G: 37,  PA: 164, HR: 7,  RBI: 14,  SB: 1,  'BB%': 10.4, 'K%': 20.7, AVG: .226, OBP: .350, SLG: .438, OPS: .788, 'wRC+': 114, bWAR: 0.4 },
+  { Year: 2018, Age: 35, G: 2,   PA: 9,   HR: 0,  RBI: 1,   SB: 0,  'BB%': 0.0,  'K%': 33.3, AVG: .000, OBP: .000, SLG: .000, OPS: .000, 'wRC+': -100, bWAR: -0.1 },
+];
+
+const CAREER_ROW = {
+  Year: 'Career', Age: '—', G: 1585, PA: 6911, HR: 242, RBI: 970, SB: 196,
+  'BB%': 11.0, 'K%': 18.5, AVG: .296, OBP: .376, SLG: .491, OPS: .867, 'wRC+': 133, bWAR: 54.6,
+};
+
+const SIMILAR_PLAYERS = [
+  { initials: 'SR', name: 'Scott Rolen', meta: '3B · 1996–2012 · 70.1 bWAR', score: 972, mets: false },
+  { initials: 'RS', name: 'Ron Santo',   meta: '3B · 1960–1974 · 70.5 bWAR', score: 951, mets: false },
+  { initials: 'EM', name: 'Edgar Martinez', meta: 'DH · 1987–2004 · 68.4 bWAR', score: 948, mets: false },
+  { initials: 'HJ', name: 'Howard Johnson', meta: '3B · 1982–1995 · 35.9 bWAR', score: 935, mets: true },
+  { initials: 'EL', name: 'Evan Longoria',  meta: '3B · 2008–2023 · 58.8 bWAR', score: 924, mets: false },
+];
+
+const AWARDS = [
+  ['2007', 'NL Silver Slugger · NL Gold Glove · All-Star'],
+  ['2008', 'NL Silver Slugger · NL Gold Glove · All-Star'],
+  ['2009', 'NL All-Star'],
+  ['2010', 'NL All-Star'],
+  ['2012', 'NL All-Star · MVP (6th)'],
+  ['2013', 'NL All-Star · Mets Captain'],
+  ['2022', 'Mets Hall of Fame'],
+];
+
+const POSTSEASON = [
+  ['Series Played', '3'], ['Games', '17'], ['Slash Line', '.231/.317/.354'],
+  ['HR', '1'], ['2015 WS', '.208 / 1 HR'],
+];
+
+const COMMENT_TAGS = ['Career', 'Postseason', 'Off-field', 'Tribute'];
+
+const TAG_COLORS = {
+  'Career':     { bg: '#DBEAFE', fg: '#002D72' },
+  'Postseason': { bg: '#FEE2E2', fg: '#B91C1C' },
+  'Off-field':  { bg: '#DCFCE7', fg: '#166534' },
+  'Tribute':    { bg: '#FEF3C7', fg: '#92400E' },
+};
+
+const AVATAR_COLORS = ['#002D72', '#FF5910', '#10B981', '#8B5CF6', '#EC4899', '#0EA5E9'];
+
+const NOW = Date.now();
+const INITIAL_COMMENTS = [
+  {
+    id: 1,
+    user: 'CitiFieldKid',
+    initials: 'CK',
+    color: '#FF5910',
+    timestamp: NOW - 1000 * 60 * 60 * 4,
+    text: "Saw his last game in 2018 — left no dry eye in the stadium. Forever the Captain.",
+    likes: 47,
+    tag: 'Tribute',
+    canDelete: false,
+  },
+  {
+    id: 2,
+    user: 'MetsFan86',
+    initials: 'MF',
+    color: '#002D72',
+    timestamp: NOW - 1000 * 60 * 60 * 26,
+    text: "Wright belongs in Cooperstown, not just the Mets HOF. Injuries cut his career short, but at his peak (2007–2008), he was the best player in the NL — 8.3 bWAR is no joke.",
+    likes: 24,
+    tag: 'Career',
+    canDelete: false,
+  },
+  {
+    id: 3,
+    user: 'Amazin84',
+    initials: 'A8',
+    color: '#10B981',
+    timestamp: NOW - 1000 * 60 * 60 * 24 * 3,
+    text: "His 2012 comeback season is so underrated. 6.7 bWAR after the back issues started — pure determination.",
+    likes: 12,
+    tag: 'Career',
+    canDelete: false,
+  },
+  {
+    id: 4,
+    user: 'FlushingForever',
+    initials: 'FF',
+    color: '#8B5CF6',
+    timestamp: NOW - 1000 * 60 * 60 * 24 * 5,
+    text: "Anyone else still get chills watching the 2015 NLCS clincher? Wright's HR off Arrieta in Game 1 of that WS was magic.",
+    likes: 31,
+    tag: 'Postseason',
+    canDelete: false,
+  },
+];
+
+const CAREER_ARC_DATA = {
+  labels: SEASONS.map(s => String(s.Year)).concat(['2017']),
+  wright:  [...SEASONS.slice(0,13).map(s => s.bWAR), null, SEASONS[13].bWAR],
+  league:  [2.2, 2.3, 2.1, 2.4, 2.0, 2.2, 2.1, 2.0, 2.3, 2.2, 2.1, 2.0, 2.1, 2.2, 2.1],
+};
+
+const STAT_COLUMNS = ['Year','Age','G','PA','HR','RBI','SB','BB%','K%','AVG','OBP','SLG','OPS','wRC+','bWAR'];
+
+const NAV_ITEMS = ['Home','Players','Seasons','Games','Leaders','Postseason','Lab','Media'];
+const NAV_HREF = {
+  Home:       'index.html',
+  Players:    'player-prototype-react.html',
+  Seasons:    'season-prototype-react.html',
+  Games:      'game-prototype-react.html',
+  Leaders:    'leaders-prototype-react.html',
+  Postseason: 'postseason-prototype-react.html',
+  Lab:        'comparison-prototype-react.html',
+  Media:      'media-prototype-react.html',
+};
+const TABS = ['Profile','Standard','Advanced','Splits','Game Logs','Postseason','Awards','Media'];
+
+/* ============================================================
+ * HELPERS
+ * ============================================================ */
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  const d = Math.floor(h / 24);
+  if (d < 7) return d + 'd ago';
+  const w = Math.floor(d / 7);
+  if (w < 4) return w + 'w ago';
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function makeInitials(name) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return name.slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function pickColor(seed) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
+function useClickOutside(ref, handler) {
+  useEffect(() => {
+    const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) handler(); };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [ref, handler]);
+}
+
+/* ============================================================
+ * COMPONENTS
+ * ============================================================ */
+
+function TopBar({ user, onSignInClick, onSignOut }) {
+  return (
+    <header className="topbar">
+      <div className="topbar-inner">
+        <div className="logo">ULTIMATE<span>METS</span></div>
+        <nav className="nav">
+          {NAV_ITEMS.map(item => (
+            <button
+              key={item}
+              className={item === 'Players' ? 'active' : ''}
+              onClick={() => { if (item !== 'Players') window.location.href = NAV_HREF[item]; }}>
+              {item}
+            </button>
+          ))}
+        </nav>
+        <div className="nav-tools">
+          <input className="search" type="text" placeholder="Search players, seasons, games..." />
+          {user
+            ? <UserMenu user={user} onSignOut={onSignOut} />
+            : <button className="signin" onClick={onSignInClick}>Sign In</button>}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function UserMenu({ user, onSignOut }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useClickOutside(ref, () => setOpen(false));
+  return (
+    <div className="user-menu" ref={ref}>
+      <button
+        className="user-avatar-btn"
+        style={{ background: user.color }}
+        onClick={() => setOpen(o => !o)}
+        title={user.name}>
+        {user.initials}
+      </button>
+      {open && (
+        <div className="user-dropdown">
+          <div className="user-dropdown-header">
+            <div className="user-dropdown-name">{user.name}</div>
+            <div className="user-dropdown-handle">@{user.handle}</div>
+          </div>
+          <button>My Profile</button>
+          <button>My Comments</button>
+          <button>Followed Players</button>
+          <button>Settings</button>
+          <button className="signout" onClick={() => { setOpen(false); onSignOut(); }}>Sign Out</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SignInModal({ onClose, onSignIn }) {
+  const [name, setName] = useState('');
+  const submit = (e) => {
+    e?.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    onSignIn({
+      name: trimmed,
+      handle: trimmed.toLowerCase().replace(/\s+/g, '_'),
+      initials: makeInitials(trimmed),
+      color: pickColor(trimmed),
+    });
+  };
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>×</button>
+        <div className="modal-title">Sign in to UltimateMets</div>
+        <div className="modal-subtitle">Join the conversation, post comments, and share your takes on Mets history with the community.</div>
+        <form onSubmit={submit}>
+          <label className="modal-label">Display name</label>
+          <input
+            className="modal-input"
+            type="text"
+            value={name}
+            autoFocus
+            placeholder="e.g. AmazinFan86"
+            onChange={e => setName(e.target.value)} />
+          <button type="submit" className="modal-submit" disabled={!name.trim()}>Sign In</button>
+        </form>
+        <div className="modal-divider">or continue with</div>
+        <div className="oauth-row">
+          <button className="oauth-btn" onClick={() => onSignIn({ name: 'Google User', handle: 'google_user', initials: 'GU', color: pickColor('google') })}>G  Google</button>
+          <button className="oauth-btn" onClick={() => onSignIn({ name: 'X User', handle: 'x_user', initials: 'XU', color: pickColor('x') })}>𝕏  X</button>
+          <button className="oauth-btn" onClick={() => onSignIn({ name: 'FB User', handle: 'fb_user', initials: 'FU', color: pickColor('fb') })}>f  Facebook</button>
+        </div>
+        <div className="modal-note">Demo prototype · No real authentication, no data is stored</div>
+      </div>
+    </div>
+  );
+}
+
+function ShareButton({ playerName, onQuoteShare }) {
+  const [open, setOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+  const ref = useRef(null);
+  useClickOutside(ref, () => setOpen(false));
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2000);
+  };
+  const url = typeof window !== 'undefined' ? window.location.href : '';
+  const text = `${playerName} on UltimateMets — career stats, percentile rankings, and fan discussion`;
+
+  return (
+    <div className="share-wrap" ref={ref}>
+      <button className="header-action-btn" onClick={() => setOpen(o => !o)}>↗ Share</button>
+      {open && (
+        <div className="share-popover">
+          <button onClick={() => { navigator.clipboard?.writeText(url); showToast('Link copied to clipboard'); setOpen(false); }}>
+            <span className="share-icon">🔗</span>Copy link
+          </button>
+          <button onClick={() => { window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank'); setOpen(false); }}>
+            <span className="share-icon">𝕏</span>Share to X
+          </button>
+          <button onClick={() => { window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank'); setOpen(false); }}>
+            <span className="share-icon">f</span>Share to Facebook
+          </button>
+          <button onClick={() => { window.open(`https://bsky.app/intent/compose?text=${encodeURIComponent(text + ' ' + url)}`, '_blank'); setOpen(false); }}>
+            <span className="share-icon">🦋</span>Share to Bluesky
+          </button>
+          <button onClick={() => { onQuoteShare(); setOpen(false); }}>
+            <span className="share-icon">💬</span>Quote &amp; Comment
+          </button>
+        </div>
+      )}
+      {toast && <div className="share-toast">{toast}</div>}
+    </div>
+  );
+}
+
+function CommentForm({ user, onPost, onSignInClick, autoFocus }) {
+  const [text, setText] = useState('');
+  const [tag, setTag] = useState('Career');
+  const taRef = useRef(null);
+
+  useEffect(() => {
+    if (autoFocus && taRef.current && user) taRef.current.focus();
+  }, [autoFocus, user]);
+
+  if (!user) {
+    return (
+      <div className="comment-prompt">
+        Want to join the discussion?{' '}
+        <strong onClick={onSignInClick}>Sign in</strong> to post your take on {PLAYER.name}.
+      </div>
+    );
+  }
+
+  const submit = () => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    onPost({ text: trimmed, tag });
+    setText('');
+  };
+
+  return (
+    <div className="comment-form">
+      <div className="comment-form-top">
+        <div className="comment-avatar" style={{ background: user.color }}>{user.initials}</div>
+        <textarea
+          ref={taRef}
+          value={text}
+          placeholder={`Share your take on ${PLAYER.name}...`}
+          onChange={e => setText(e.target.value)}
+          maxLength={500} />
+      </div>
+      <div className="comment-form-row">
+        <div className="comment-tags">
+          {COMMENT_TAGS.map(t => (
+            <button key={t}
+                    className={'comment-tag-pick' + (tag === t ? ' active' : '')}
+                    onClick={() => setTag(t)}>
+              {t}
+            </button>
+          ))}
+        </div>
+        <button className="comment-post-btn" onClick={submit} disabled={!text.trim()}>
+          Post {text.trim() && <span style={{opacity:0.7, marginLeft:4, fontSize:11}}>{text.length}/500</span>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CommentItem({ comment, currentUser, onLike, onDelete }) {
+  const tagColor = TAG_COLORS[comment.tag] || TAG_COLORS.Career;
+  const isMine = currentUser && comment.user === currentUser.name;
+  return (
+    <div className="comment">
+      <div className="comment-avatar" style={{ background: comment.color }}>{comment.initials}</div>
+      <div className="comment-body">
+        <div className="comment-meta">
+          <span className="comment-user">{comment.user}</span>
+          <span className="comment-time">· {timeAgo(comment.timestamp)}</span>
+          <span className="comment-tag" style={{ background: tagColor.bg, color: tagColor.fg }}>{comment.tag}</span>
+          {isMine && <span className="comment-time" style={{color: 'var(--mets-orange)', fontWeight: 600}}>· You</span>}
+        </div>
+        <div className="comment-text">{comment.text}</div>
+        <div className="comment-actions">
+          <button
+            className={'comment-action' + (comment.likedByMe ? ' liked' : '')}
+            onClick={() => onLike(comment.id)}>
+            {comment.likedByMe ? '♥' : '♡'} {comment.likes}
+          </button>
+          <button className="comment-action">↩ Reply</button>
+          <button className="comment-action">↗ Share</button>
+          {isMine && <button className="comment-action danger" onClick={() => onDelete(comment.id)}>🗑 Delete</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CommentSection({ comments, user, onSignInClick, onPost, onLike, onDelete, formAutoFocus }) {
+  const [sort, setSort] = useState('newest');
+  const sorted = useMemo(() => {
+    const copy = [...comments];
+    if (sort === 'top') copy.sort((a, b) => b.likes - a.likes);
+    else copy.sort((a, b) => b.timestamp - a.timestamp);
+    return copy;
+  }, [comments, sort]);
+
+  return (
+    <Card title={`Fan Discussion · ${comments.length}`} action="ⓘ community guidelines">
+      <CommentForm user={user} onPost={onPost} onSignInClick={onSignInClick} autoFocus={formAutoFocus} />
+      <div className="comments-toolbar">
+        <div className="comments-count">
+          <strong>{comments.length}</strong> comments about {PLAYER.name}
+        </div>
+        <div className="comments-sort">
+          <button className={sort === 'newest' ? 'active' : ''} onClick={() => setSort('newest')}>Newest</button>
+          <button className={sort === 'top' ? 'active' : ''} onClick={() => setSort('top')}>Top</button>
+        </div>
+      </div>
+      {sorted.map(c => (
+        <CommentItem key={c.id} comment={c} currentUser={user} onLike={onLike} onDelete={onDelete} />
+      ))}
+    </Card>
+  );
+}
+
+function PlayerHeader({ player, actions }) {
+  return (
+    <section className="player-header">
+      {actions && <div className="header-actions">{actions}</div>}
+      <div className="player-header-inner">
+        <div className="player-photo">{player.initials}</div>
+        <div className="player-info">
+          <h1>{player.name}<span className="number">#{player.number}</span></h1>
+          <div className="player-meta">
+            <span><strong>{player.position}</strong></span>
+            <span>Bats: <strong>{player.bats}</strong></span>
+            <span>Throws: <strong>{player.throws}</strong></span>
+            <span>{player.height}, {player.weight}</span>
+            <span>Born: <strong>{player.born}</strong> · {player.birthplace}</span>
+            <span>Debut: <strong>{player.debut}</strong></span>
+            <span>{player.seasons}</span>
+          </div>
+          <div className="player-honors">
+            {player.honors.map(h => <span key={h} className="badge">{h}</span>)}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Tabs({ tabs, active, onChange }) {
+  return (
+    <nav className="tabs">
+      <div className="tabs-inner">
+        {tabs.map(t => (
+          <button
+            key={t}
+            className={'tab' + (active === t ? ' active' : '')}
+            onClick={() => onChange(t)}>
+            {t}
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+function Card({ title, action, children }) {
+  return (
+    <div className="card">
+      <div className="card-header">
+        <div className="card-title">{title}</div>
+        {action && <button className="card-action">{action}</button>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function CareerArcChart({ data }) {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    if (chartRef.current) chartRef.current.destroy();
+
+    chartRef.current = new Chart(canvasRef.current.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: data.labels,
+        datasets: [
+          {
+            label: 'David Wright bWAR',
+            data: data.wright,
+            borderColor: '#FF5910',
+            backgroundColor: 'rgba(255,89,16,0.12)',
+            borderWidth: 3,
+            tension: 0.35,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+            pointBackgroundColor: '#FF5910',
+            pointBorderColor: 'white',
+            pointBorderWidth: 2,
+            fill: true,
+            spanGaps: true,
+          },
+          {
+            label: 'League Avg 3B',
+            data: data.league,
+            borderColor: '#002D72',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            pointRadius: 0,
+            fill: false,
+            tension: 0.4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#111827',
+            titleFont: { weight: 'bold', size: 13 },
+            bodyFont: { size: 12 },
+            padding: 12,
+            cornerRadius: 6,
+            callbacks: {
+              label: c => c.parsed.y === null
+                ? c.dataset.label + ': DNP (injury)'
+                : c.dataset.label + ': ' + c.parsed.y.toFixed(1)
+            },
+          },
+        },
+        scales: {
+          y: {
+            title: { display: true, text: 'bWAR', font: {size: 11, weight: 600}, color: '#6B7280' },
+            grid: { color: '#F3F4F6' },
+            ticks: { font: { family: "'Roboto Mono'", size: 11 }, color: '#6B7280' },
+          },
+          x: {
+            grid: { display: false },
+            ticks: { font: { family: "'Roboto Mono'", size: 11 }, color: '#6B7280' },
+          },
+        },
+      },
+    });
+
+    return () => { if (chartRef.current) chartRef.current.destroy(); };
+  }, [data]);
+
+  return (
+    <Card title="Career Arc · bWAR by Season" action="Switch metric ▾">
+      <div className="chart-container"><canvas ref={canvasRef} /></div>
+      <div className="chart-legend">
+        <div className="legend-item"><div className="legend-dot" style={{background:'#FF5910'}} />David Wright bWAR</div>
+        <div className="legend-item"><div className="legend-line" style={{borderColor:'#002D72'}} />League Avg 3B</div>
+        <div className="legend-item"><div className="legend-dot" style={{background:'#9CA3AF'}} />Replacement Level (0)</div>
+      </div>
+    </Card>
+  );
+}
+
+function PercentilesCard({ percentiles }) {
+  return (
+    <Card title="Career Percentile Rankings · vs. all 3B since 1962" action="ⓘ how is this calculated">
+      {percentiles.map(p => (
+        <div className="pct-row" key={p.label}>
+          <div className="pct-label">{p.label}</div>
+          <div className="pct-bar-track">
+            <div className="pct-bar-marker" style={{ left: p.value + '%' }} />
+          </div>
+          <div className="pct-value">{p.value}</div>
+        </div>
+      ))}
+      <div className="pct-help">
+        <span>← Lower (Worse)</span>
+        <span>50 = League Avg</span>
+        <span>Higher (Better) →</span>
+      </div>
+    </Card>
+  );
+}
+
+function fmtCell(col, val) {
+  if (val === null || val === undefined) return '—';
+  if (['AVG','OBP','SLG','OPS'].includes(col)) {
+    return val === 0 ? '.000' : val.toFixed(3).replace(/^0/, '');
+  }
+  if (['BB%','K%','bWAR'].includes(col)) return Number(val).toFixed(1);
+  return val;
+}
+
+function StatsTable({ rows, careerRow, columns }) {
+  const [sortCol, setSortCol] = useState(null);
+  const [sortDir, setSortDir] = useState('desc');
+
+  const sortedRows = useMemo(() => {
+    if (!sortCol) return rows;
+    const sorted = [...rows].sort((a, b) => {
+      const av = a[sortCol], bv = b[sortCol];
+      if (typeof av === 'number') return sortDir === 'asc' ? av - bv : bv - av;
+      return sortDir === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+    return sorted;
+  }, [rows, sortCol, sortDir]);
+
+  const handleSort = (col) => {
+    if (sortCol === col) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('desc'); }
+  };
+
+  return (
+    <Card title="Year-by-Year Standard Batting" action="Share & Export ▾">
+      <div className="table-wrap">
+        <table className="stats">
+          <thead>
+            <tr>
+              {columns.map(col => (
+                <th key={col}
+                    className={sortCol === col ? 'sorted' : ''}
+                    onClick={() => handleSort(col)}>
+                  {col}
+                  <span className="sort-arrow">
+                    {sortCol === col ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
+                  </span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedRows.map(row => (
+              <tr key={row.Year} className="linkable-row"
+                  onClick={() => window.location.href = 'season-prototype-react.html'}
+                  title={'Open ' + row.Year + ' season'}>
+                {columns.map((col, idx) => {
+                  const isLeader = row.leaders && row.leaders.includes(col);
+                  const cell = fmtCell(col, row[col]);
+                  if (idx === 0) {
+                    return <td key={col}><span className="linkable" style={{fontWeight:600}}>{cell}</span></td>;
+                  }
+                  return <td key={col}>{isLeader ? <span className="leader-cell">{cell}</span> : cell}</td>;
+                })}
+              </tr>
+            ))}
+            <tr className="career-total">
+              {columns.map(col => <td key={col}>{fmtCell(col, careerRow[col])}</td>)}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+function StatList({ title, items, action }) {
+  return (
+    <Card title={title} action={action}>
+      {items.map(([lbl, val]) => (
+        <div className="sidebar-stat" key={lbl}>
+          <span className="lbl">{lbl}</span>
+          <span className="val">{val}</span>
+        </div>
+      ))}
+    </Card>
+  );
+}
+
+function SimilarPlayers({ players }) {
+  return (
+    <Card title="Similar Players" action="view all">
+      {players.map(p => (
+        <a className="similar-player" href="player-prototype-react.html" key={p.name}>
+          <div className={'sim-avatar' + (p.mets ? ' mets' : '')}>{p.initials}</div>
+          <div className="sim-info">
+            <div className="name">{p.name}</div>
+            <div className="meta">{p.meta}</div>
+          </div>
+          <div className="sim-score">{p.score}</div>
+        </a>
+      ))}
+    </Card>
+  );
+}
+
+function Awards({ awards }) {
+  return (
+    <Card title="Awards & Honors">
+      {awards.map(([year, text]) => (
+        <div className="award-item" key={year + text}>
+          <span className="award-year">{year}</span>
+          <span>{text}</span>
+        </div>
+      ))}
+    </Card>
+  );
+}
+
+/* ============================================================
+ * APP
+ * ============================================================ */
+function App() {
+  const [activeTab, setActiveTab] = useState('Profile');
+  const [user, setUser] = useState(null);
+  const [showSignIn, setShowSignIn] = useState(false);
+  const [comments, setComments] = useState(INITIAL_COMMENTS);
+  const [formAutoFocus, setFormAutoFocus] = useState(0);
+
+  const handleSignIn = (u) => {
+    setUser(u);
+    setShowSignIn(false);
+  };
+
+  const handleSignOut = () => {
+    setComments(cs => cs.map(c => ({ ...c, likedByMe: false })));
+    setUser(null);
+  };
+
+  const handlePost = ({ text, tag }) => {
+    if (!user) { setShowSignIn(true); return; }
+    setComments(cs => [{
+      id: Date.now(),
+      user: user.name,
+      initials: user.initials,
+      color: user.color,
+      timestamp: Date.now(),
+      text,
+      likes: 0,
+      tag,
+      canDelete: true,
+    }, ...cs]);
+  };
+
+  const handleLike = (id) => {
+    if (!user) { setShowSignIn(true); return; }
+    setComments(cs => cs.map(c => c.id === id
+      ? { ...c, likes: c.likes + (c.likedByMe ? -1 : 1), likedByMe: !c.likedByMe }
+      : c));
+  };
+
+  const handleDelete = (id) => {
+    setComments(cs => cs.filter(c => c.id !== id));
+  };
+
+  const handleQuoteShare = () => {
+    if (!user) setShowSignIn(true);
+    else {
+      setActiveTab('Profile');
+      setFormAutoFocus(n => n + 1);
+      setTimeout(() => {
+        document.querySelector('.comment-form textarea')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+    }
+  };
+
+  const headerActions = (
+    <>
+      <ShareButton playerName={PLAYER.name} onQuoteShare={handleQuoteShare} />
+      <button
+        className={'header-action-btn' + (user ? ' primary' : '')}
+        onClick={() => !user && setShowSignIn(true)}>
+        {user ? '★ Following' : '☆ Follow'}
+      </button>
+    </>
+  );
+
+  return (
+    <>
+      <TopBar
+        user={user}
+        onSignInClick={() => setShowSignIn(true)}
+        onSignOut={handleSignOut} />
+      <PlayerHeader player={PLAYER} actions={headerActions} />
+      <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+      <main className="main">
+        <div className="content">
+          <CareerArcChart data={CAREER_ARC_DATA} />
+          <PercentilesCard percentiles={PERCENTILES} />
+          <StatsTable rows={SEASONS} careerRow={CAREER_ROW} columns={STAT_COLUMNS} />
+          <CommentSection
+            comments={comments}
+            user={user}
+            onSignInClick={() => setShowSignIn(true)}
+            onPost={handlePost}
+            onLike={handleLike}
+            onDelete={handleDelete}
+            formAutoFocus={formAutoFocus} />
+        </div>
+        <aside className="sidebar">
+          <StatList title="Career Totals" items={CAREER_TOTALS} />
+          <SimilarPlayers players={SIMILAR_PLAYERS} />
+          <Awards awards={AWARDS} />
+          <StatList title="Postseason Snapshot" items={POSTSEASON} />
+        </aside>
+      </main>
+      <footer className="footer">
+        Prototype · Ultimate Mets Database redesign · React version · Statistics shown are illustrative for design purposes only
+      </footer>
+      {showSignIn && <SignInModal onClose={() => setShowSignIn(false)} onSignIn={handleSignIn} />}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<!-- ===== Cross-page UX helpers (breadcrumb + recent-tracker + .linkable styles) ===== -->
+<script>
+(function() {
+  var FILES = {
+    'index.html':                     { section: 'home',       name: 'Home' },
+    'player-prototype-react.html':    { section: 'players',    name: 'Players' },
+    'player-prototype.html':          { section: 'players',    name: 'Players' },
+    'season-prototype-react.html':    { section: 'seasons',    name: 'Seasons' },
+    'game-prototype-react.html':      { section: 'games',      name: 'Games' },
+    'leaders-prototype-react.html':   { section: 'leaders',    name: 'Leaders' },
+    'postseason-prototype-react.html':{ section: 'postseason', name: 'Postseason' },
+    'comparison-prototype-react.html':{ section: 'lab',        name: 'Lab' },
+    'media-prototype-react.html':     { section: 'media',      name: 'Media' },
+  };
+  var here = location.pathname.split('/').pop() || 'index.html';
+  var hereInfo = FILES[here] || { section: 'other', name: 'Page' };
+  var hereTitle = (document.title.split(' | ')[0].split(' · ')[0]).trim();
+
+  try {
+    var style = document.createElement('style');
+    style.textContent = '.linkable{cursor:pointer;transition:color 0.1s;}.linkable:hover{color:#FF5910!important;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#FF5910;}tr.linkable-row{cursor:pointer;}tr.linkable-row:hover{background:#FFF7ED!important;}tr.linkable-row:hover td:first-child{color:#FF5910;}.linkable-card{cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;}.linkable-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.08);border-color:#FF5910!important;}';
+    document.head.appendChild(style);
+  } catch (e) {}
+
+  try {
+    if (here !== 'index.html') {
+      var item = { section: hereInfo.section, title: hereTitle, href: here, at: Date.now() };
+      var recent = JSON.parse(localStorage.getItem('mets_recent') || '[]');
+      recent = [item].concat(recent.filter(function(r){ return r.href !== here; })).slice(0, 8);
+      localStorage.setItem('mets_recent', JSON.stringify(recent));
+    }
+  } catch (e) {}
+
+  try {
+    if (!document.referrer) return;
+    var refUrl = new URL(document.referrer);
+    if (refUrl.origin !== location.origin) return;
+    var refFile = refUrl.pathname.split('/').pop() || 'index.html';
+    if (refFile === here) return;
+    var fromInfo = FILES[refFile];
+    if (!fromInfo) return;
+    var banner = document.createElement('div');
+    banner.style.cssText = 'background:#FFF7ED;border-bottom:1px solid #FED7AA;padding:7px 24px;font-size:12px;display:flex;align-items:center;gap:8px;font-family:Inter,system-ui,sans-serif;flex-wrap:wrap;';
+    banner.innerHTML = '<a href="' + document.referrer + '" style="color:#FF5910;text-decoration:none;font-weight:600;">← Back to ' + fromInfo.name + '</a><span style="color:#9CA3AF;margin-left:auto;font-size:11.5px;">You are here: <strong style="color:#111827;">' + hereTitle + '</strong></span>';
+    document.body.insertBefore(banner, document.body.firstChild);
+  } catch (e) {}
+})();
+</script>
+
+</body>
+</html>
