@@ -22,7 +22,7 @@ app/
   layout.tsx          Root layout — renders the shared TopBar + Footer on EVERY page
   globals.css         Design tokens + shared chrome (top bar, footer, modal)
   page.tsx            Home (was index.html); shows live "Latest Games" from the DB
-  api/games/          REST API backed by the pipeline's SQLite database
+  api/games/          REST API backed by the pipeline's PostgreSQL database
   players/  seasons/  games/  leaders/  postseason/  lab/  media/
                       One route per former prototype. Each has:
                         page.tsx     the ported UI
@@ -33,7 +33,7 @@ components/
   Footer.tsx, SignInModal.tsx, RecentlyViewed.tsx, RecentTracker.tsx
 lib/
   nav.ts              Single source of truth for nav items + section colors
-  db.ts               Reads ../data-pipeline/mets.db via Node's built-in node:sqlite
+  db.ts               Reads the shared PostgreSQL database via the `pg` client (Pool)
   types.ts            Shared types (Game mirrors the pipeline's games table)
 ```
 
@@ -56,19 +56,20 @@ chrome (top bar, footer) stays global in `globals.css`.
 
 ## Backend (front-end + back-end in one app)
 
-API route handlers read the SQLite database produced by the Python pipeline in
-`../data-pipeline` (no separate server needed):
+API route handlers query the same PostgreSQL database the Python pipeline writes to,
+using the `pg` client (no separate API server needed):
 
 - `GET /api/games` — most recent final games
 - `GET /api/games?season=2024` — all games in a season
 - `GET /api/games/:gamePk` — a single game by MLB `game_pk`
 
-The home page's "Latest Games" strip is rendered server-side from the same data. If
-the pipeline hasn't been run yet (no `mets.db`), these gracefully return empty and the
-rest of the site still works on its illustrative data.
+The home page's "Latest Games" strip is rendered server-side from the same data. If the
+database is unavailable or empty, queries gracefully return empty and the rest of the
+site still works on its illustrative data.
 
-The DB path defaults to `../data-pipeline/mets.db`; override with the `METS_DB_PATH`
-environment variable.
+Set the connection via the `DATABASE_URL` environment variable (libpq connection
+string), e.g. `postgresql://localhost:5432/ultimate_mets`. Create a `.env.local` in
+`web/` with `DATABASE_URL=...` for local development.
 
 ## Data status
 

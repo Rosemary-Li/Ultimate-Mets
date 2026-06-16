@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ gamePk: string }> },
 ) {
   const { gamePk } = await params;
-  const game = getGame(Number(gamePk));
+  const game = await getGame(Number(gamePk));
   if (!game) {
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }

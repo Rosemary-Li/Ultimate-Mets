@@ -1,83 +1,90 @@
-# Ultimate Mets Data Pipeline (Phase 1: Game-level)
+# Ultimate Mets Data Pipeline (Phase 1: Game-level, PostgreSQL)
 
-After each day's games end, a script automatically does three things: pull data from
-the official MLB API → parse it into the table schema → idempotently write it to the
-database. A scheduler triggers the script daily.
+After each day's games end, this script does three things: pull data from the
+official MLB API → parse it into the table schema → idempotently write it to
+PostgreSQL. A scheduler triggers it daily.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `schema.sql` | DDL for the `games` table. Primary key `game_pk` (MLB's unique per-game ID — the basis for dedup). |
-| `ingest_games.py` | The fetch → transform → load script. Uses the Python standard library only. |
-| `mets.db` | SQLite database file (created automatically on first run). |
+| `schema.sql` | DDL for the `games` table (Postgres). Primary key `game_pk` — MLB's unique per-game ID, the basis for dedup. |
+| `ingest_games.py` | The fetch → transform → load script (uses `psycopg2`). |
+| `requirements.txt` | Python dependency: `psycopg2-binary`. |
 
-## 1. Run locally first
+## Connection
 
-No `pip install` needed — the script uses only the standard library (`urllib` + `sqlite3`):
+The script reads the connection from the `DATABASE_URL` environment variable
+(a libpq connection string), or the `--dsn` flag:
+
+```
+postgresql://USER:PASSWORD@HOST:PORT/DBNAME
+```
+
+For local development the default is `postgresql://localhost:5432/ultimate_mets`.
+
+## 1. Set up a local Postgres (test here before going to the cloud)
+
+```bash
+# Install + start Postgres (macOS / Homebrew)
+brew install postgresql@16
+brew services start postgresql@16
+
+# Create the database
+createdb ultimate_mets
+```
+
+## 2. Install the Python dependency
 
 ```bash
 cd data-pipeline
-
-# Default: backfill the last 3 days
-python3 ingest_games.py
-
-# Explicit date range (use this for the initial historical backfill)
-python3 ingest_games.py --start 2024-04-01 --end 2024-10-01
-
-# Inspect the data
-sqlite3 -header -column mets.db "SELECT official_date, away_team_name, away_score, home_team_name, home_score, status FROM games ORDER BY official_date;"
+pip install -r requirements.txt
 ```
 
-## 2. Two key design points
-
-- **Idempotent writes**: `INSERT ... ON CONFLICT(game_pk) DO UPDATE`. New games are
-  inserted; existing games have their score and status updated. The script can be
-  re-run or backfilled any number of times without ever creating duplicate rows.
-- **Default backfill window is the last 3 days** (not just "yesterday"): this
-  automatically covers state changes from double-headers, rain-outs/postponements,
-  and post-game stat corrections.
-
-## 3. Add scheduled triggering (cron, local dev stage)
-
-Run once daily at 3 AM Eastern (ensures even West Coast night games have finished).
-Edit your crontab:
+## 3. Run it
 
 ```bash
-crontab -e
+export DATABASE_URL=postgresql://localhost:5432/ultimate_mets
+
+python3 ingest_games.py                                  # backfill the last 3 days
+python3 ingest_games.py --start 2024-07-01 --end 2024-07-05   # an explicit range
+python3 ingest_games.py --dsn postgresql://localhost:5432/ultimate_mets
+
+# Inspect the data
+psql ultimate_mets -c "SELECT official_date, away_team_name, away_score, home_team_name, home_score, status FROM games ORDER BY official_date;"
 ```
 
-Add one line (use absolute paths to the script and database):
+The script creates the `games` table automatically on first run (`CREATE TABLE IF NOT EXISTS`).
+
+## 4. Two key design points
+
+- **Idempotent writes**: `INSERT ... ON CONFLICT (game_pk) DO UPDATE`. New games are
+  inserted; existing games have their score and status updated. Safe to re-run or
+  backfill any number of times without duplicate rows. (Batched via
+  `psycopg2.extras.execute_values`.)
+- **Default backfill window is the last 3 days** (not just "yesterday"): automatically
+  covers double-headers, postponements, and post-game stat corrections.
+
+## 5. Schedule it (cron, local dev)
+
+Run once daily at 3 AM Eastern (after West Coast night games finish):
 
 ```cron
-0 3 * * * cd "/Users/rosemary/Desktop/Ultimate Mets/Ultimate Mets/data-pipeline" && /usr/bin/python3 ingest_games.py >> ingest.log 2>&1
+0 3 * * * cd "/Users/rosemary/Desktop/Ultimate Mets/Ultimate Mets/data-pipeline" && DATABASE_URL=postgresql://localhost:5432/ultimate_mets /usr/bin/python3 ingest_games.py >> ingest.log 2>&1
 ```
 
-- `>> ingest.log 2>&1` writes both normal logs and error stack traces to `ingest.log`
-  for easy debugging/alerting.
-- Run `which python3` to confirm your Python path and replace `/usr/bin/python3` above.
+Confirm Python's path with `which python3`. cron uses your machine's local timezone.
 
-Verify it's registered: `crontab -l`.
+## 6. Going to the cloud
 
-> Note: cron uses your **machine's local timezone**. Convert "3 AM Eastern" to your
-> machine's timezone accordingly.
+The script doesn't change — point `DATABASE_URL` at the managed Postgres (RDS, Cloud
+SQL, Neon, Supabase, etc.) and swap the trigger for the server's cron / GitHub Actions /
+a cloud scheduler. Use `psycopg2` (compiled against libpq) instead of `psycopg2-binary`
+for production if you prefer.
 
-## 4. Deploying to production later
+## 7. Next extension (player-level granularity)
 
-The script itself does not change — just swap the trigger for a server cron job,
-GitHub Actions, or a cloud scheduler.
-
-Migrating the database from SQLite to PostgreSQL is also nearly painless:
-- The UPSERT syntax (`ON CONFLICT ... DO UPDATE`) is identical on both engines.
-- The only changes are the connection setup, the parameter placeholder (`?` → `%s`),
-  and the two type adjustments noted in the comment at the top of `schema.sql`.
-
-## 5. Next extension (player-level granularity)
-
-To reach Baseball-Reference-style player-level data, the next step is to also call the
-`/game/{game_pk}/boxscore` endpoint and split out two tables, `batting_stats` and
-`pitching_stats`, deduped on a composite `(game_pk, player_id)` primary key.
-
-Do **not** store player season/career totals or team standings as separate tables;
-instead compute them on the fly from the raw boxscore data via SQL aggregation queries,
-to avoid data inconsistency.
+Add the `/game/{game_pk}/boxscore` endpoint and split out `batting_stats` and
+`pitching_stats`, deduped on a composite `(game_pk, player_id)` primary key. Compute
+season/career totals and standings on the fly via SQL aggregation rather than storing
+them, to avoid inconsistency.

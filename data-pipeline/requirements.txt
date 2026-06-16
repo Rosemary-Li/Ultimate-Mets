@@ -1,0 +1,3 @@
+# Use psycopg2-binary for easy local installs (no system libpq build needed).
+# Swap to plain "psycopg2" for production deployments if you compile against libpq.
+psycopg2-binary>=2.9

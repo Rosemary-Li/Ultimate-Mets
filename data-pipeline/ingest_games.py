@@ -1,33 +1,37 @@
 #!/usr/bin/env python3
-"""Ultimate Mets — game-level ingestion script (Phase 1).
+"""Ultimate Mets — game-level ingestion script (Phase 1, PostgreSQL).
 
 Pipeline: fetch (MLB official /schedule API) -> transform (JSON -> rows)
-          -> load (idempotent UPSERT into SQLite by game_pk).
+          -> load (idempotent UPSERT into Postgres by game_pk).
 
 Backfills the last 3 days by default, automatically covering double-headers,
 rain-outs/postponements, and post-game stat corrections. The script is idempotent:
 it can be re-run or backfilled any number of times without creating duplicate rows.
 
-Standard library only (urllib + sqlite3) — no pip install required.
-Run with:  python3 ingest_games.py
+Connection comes from the DATABASE_URL env var (libpq connection string), or --dsn.
+Requires psycopg2 (see requirements.txt).
+Run with:  DATABASE_URL=postgresql://localhost:5432/ultimate_mets python3 ingest_games.py
 """
 import argparse
 import datetime as dt
 import json
 import logging
-import sqlite3
+import os
 import sys
 from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+import psycopg2
+from psycopg2.extras import execute_values
 
 METS_TEAM_ID = 121          # New York Mets
 SPORT_ID = 1                # MLB
 API_BASE = "https://statsapi.mlb.com/api/v1"
 
 HERE = Path(__file__).parent
-DB_PATH = HERE / "mets.db"
 SCHEMA_PATH = HERE / "schema.sql"
+DEFAULT_DSN = os.environ.get("DATABASE_URL", "postgresql://localhost:5432/ultimate_mets")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -107,61 +111,76 @@ def _as_bool(v):
 
 
 # ------------------------------------------------------------------- load
-def init_db(conn: sqlite3.Connection) -> None:
-    conn.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
+def init_db(conn) -> None:
+    with conn.cursor() as cur:
+        cur.execute(SCHEMA_PATH.read_text(encoding="utf-8"))
     conn.commit()
 
 
-def load(conn: sqlite3.Connection, rows: list[dict]) -> int:
+def load(conn, rows: list[dict]) -> int:
     """Idempotent UPSERT: insert new games, update score/status on existing ones."""
     if not rows:
         return 0
     cols = ", ".join(COLUMNS)
-    placeholders = ", ".join("?" for _ in COLUMNS)
-    updates = ", ".join(f"{c}=excluded.{c}" for c in COLUMNS if c != "game_pk")
+    updates = ", ".join(f"{c} = EXCLUDED.{c}" for c in COLUMNS if c != "game_pk")
+    # updated_at is appended as a literal now() per row via the template below.
     sql = (
-        f"INSERT INTO games ({cols}, updated_at) "
-        f"VALUES ({placeholders}, CURRENT_TIMESTAMP) "
-        f"ON CONFLICT(game_pk) DO UPDATE SET {updates}, updated_at=CURRENT_TIMESTAMP"
+        f"INSERT INTO games ({cols}, updated_at) VALUES %s "
+        f"ON CONFLICT (game_pk) DO UPDATE SET {updates}, updated_at = now()"
     )
+    template = "(" + ", ".join(["%s"] * len(COLUMNS)) + ", now())"
     data = [tuple(r[c] for c in COLUMNS) for r in rows]
-    conn.executemany(sql, data)
+    with conn.cursor() as cur:
+        execute_values(cur, sql, data, template=template)
     conn.commit()
     return len(rows)
 
 
 # ------------------------------------------------------------------- main
-def daterange_args(argv=None) -> tuple[str, str, Path]:
-    p = argparse.ArgumentParser(description="Ingest Mets game-level data into a local DB")
+def parse_args(argv=None):
+    p = argparse.ArgumentParser(description="Ingest Mets game-level data into PostgreSQL")
     p.add_argument("--days", type=int, default=3,
                    help="Backfill the last N days (default 3; covers DH/postponements/corrections)")
     p.add_argument("--start", help="Start date YYYY-MM-DD (overrides --days)")
     p.add_argument("--end", help="End date YYYY-MM-DD (defaults to today)")
-    p.add_argument("--db", default=str(DB_PATH), help="SQLite file path")
+    p.add_argument("--dsn", default=DEFAULT_DSN,
+                   help="Postgres connection string (default: $DATABASE_URL)")
     a = p.parse_args(argv)
 
     end = dt.date.fromisoformat(a.end) if a.end else dt.date.today()
-    if a.start:
-        start = dt.date.fromisoformat(a.start)
-    else:
-        start = end - dt.timedelta(days=a.days - 1)
-    return start.isoformat(), end.isoformat(), Path(a.db)
+    start = dt.date.fromisoformat(a.start) if a.start else end - dt.timedelta(days=a.days - 1)
+    return start.isoformat(), end.isoformat(), a.dsn
 
 
 def main(argv=None) -> int:
-    start, end, db_path = daterange_args(argv)
-    log.info("Backfill range %s ~ %s  ->  %s", start, end, db_path)
+    start, end, dsn = parse_args(argv)
+    log.info("Backfill range %s ~ %s  ->  %s", start, end, _safe_dsn(dsn))
+    conn = None
     try:
         payload = fetch_schedule(start, end)
         rows = transform(payload)
-        with sqlite3.connect(db_path) as conn:
-            init_db(conn)
-            n = load(conn, rows)
+        conn = psycopg2.connect(dsn)
+        init_db(conn)
+        n = load(conn, rows)
         log.info("Done: wrote/updated %d games (%d returned by API)", n, len(rows))
         return 0
     except Exception:
         log.exception("Ingestion failed")   # full stack trace for debugging/alerting
         return 1
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def _safe_dsn(dsn: str) -> str:
+    """Hide a password if the DSN embeds one, for log output."""
+    if "@" in dsn and "//" in dsn:
+        scheme, rest = dsn.split("//", 1)
+        creds, host = rest.split("@", 1)
+        if ":" in creds:
+            user = creds.split(":", 1)[0]
+            return f"{scheme}//{user}:***@{host}"
+    return dsn
 
 
 if __name__ == "__main__":

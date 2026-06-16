@@ -2,7 +2,7 @@ import "./home.css";
 import Link from "next/link";
 import { ReactNode } from "react";
 import { HREF } from "@/lib/nav";
-import { getRecentGames } from "@/lib/db";
+import { getRecentGames, getSiteStats } from "@/lib/db";
 import RecentlyViewed from "@/components/RecentlyViewed";
 
 interface Entry {
@@ -127,9 +127,19 @@ const TRENDING = [
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
+export default async function HomePage() {
   // Real data from the pipeline DB (empty array if the pipeline hasn't run).
-  const latestGames = getRecentGames(5);
+  const latestGames = await getRecentGames(5);
+
+  // Hero counts computed from the DB; fall back to illustrative figures if empty.
+  const stats = await getSiteStats();
+  const heroStats = [
+    { num: stats?.seasons ? String(stats.seasons) : "64", lbl: "Seasons" },
+    { num: stats?.players ? stats.players.toLocaleString() : "1,243", lbl: "Players" },
+    { num: stats?.postseasons ? String(stats.postseasons) : "11", lbl: "Postseasons" },
+    { num: "2", lbl: "WS Titles" },
+    { num: "12,824", lbl: "Media Items" },
+  ];
 
   return (
     <>
@@ -151,26 +161,12 @@ export default function HomePage() {
             </div>
           </div>
           <div className="hero-stats">
-            <div className="hero-stat">
-              <div className="num">64</div>
-              <div className="lbl">Seasons</div>
-            </div>
-            <div className="hero-stat">
-              <div className="num">1,243</div>
-              <div className="lbl">Players</div>
-            </div>
-            <div className="hero-stat">
-              <div className="num">11</div>
-              <div className="lbl">Postseasons</div>
-            </div>
-            <div className="hero-stat">
-              <div className="num">2</div>
-              <div className="lbl">WS Titles</div>
-            </div>
-            <div className="hero-stat">
-              <div className="num">12,824</div>
-              <div className="lbl">Media Items</div>
-            </div>
+            {heroStats.map((s) => (
+              <div className="hero-stat" key={s.lbl}>
+                <div className="num">{s.num}</div>
+                <div className="lbl">{s.lbl}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
