@@ -27,6 +27,38 @@ export interface Game {
 
 export const METS_TEAM_ID = 121;
 
+export interface Trending {
+  id: number;
+  position: number | null;
+  title: string | null;
+  subtitle: string | null;
+  href: string | null;
+}
+
+export interface TodayHistory {
+  id: number;
+  event_month: number;
+  event_day: number;
+  event_year: number | null;
+  headline: string | null;
+  blurb: string | null;
+  meta: string | null;
+}
+
+export interface MediaItem {
+  id: number;
+  media_type: string | null;
+  title: string | null;
+  description: string | null;
+  era: string | null;
+  season: number | null;
+  player_name: string | null;
+  source: string | null;
+  url: string | null;
+  published_at: string | null;
+  featured: boolean | null;
+}
+
 export interface Player {
   player_id: number;
   full_name: string | null;
@@ -87,11 +119,25 @@ export interface SeasonPitching {
   whip: string | null;
 }
 
+export interface PostseasonSeries {
+  season: number;
+  game_type: string;
+  round_order: number;
+  series_description: string | null;
+  games: number;
+  mets_wins: number;
+  mets_losses: number;
+  start_date: string | null;
+  end_date: string | null;
+}
+
 export interface SiteStats {
   seasons: number;
   players: number;
   games: number;
   postseasons: number;
+  first_season: number | null;
+  last_season: number | null;
 }
 
 export interface BoxBatting {

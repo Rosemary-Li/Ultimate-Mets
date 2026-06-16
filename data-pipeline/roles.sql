@@ -41,10 +41,15 @@ GRANT SELECT
   ON games, players, batting_stats, pitching_stats, team_season, game_linescore
   TO mets_web;
 
--- ---- editorial tables (created by schema_editorial.sql): editor writes, web reads ----
--- The pipeline role is deliberately omitted. When the editorial tables exist, run:
---   GRANT SELECT, INSERT, UPDATE, DELETE ON media_items, today_in_history, trending TO mets_editor;
---   GRANT SELECT ON media_items, today_in_history, trending TO mets_web;
+-- ---- editorial tables (schema_editorial.sql): editor writes, web reads ----
+-- The pipeline role is deliberately omitted, so an automated run can't touch them.
+GRANT SELECT, INSERT, UPDATE, DELETE
+  ON media_items, today_in_history, trending
+  TO mets_editor;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO mets_editor;  -- SERIAL ids
+GRANT SELECT
+  ON media_items, today_in_history, trending
+  TO mets_web;
 
 -- ---- views are read by the web role ----
 -- Run after views.sql is applied (views inherit nothing automatically):

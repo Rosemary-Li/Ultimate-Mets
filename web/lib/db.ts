@@ -9,6 +9,10 @@ import type {
   BoxBatting,
   BoxPitching,
   LinescoreInning,
+  PostseasonSeries,
+  Trending,
+  TodayHistory,
+  MediaItem,
 } from "./types";
 
 // Postgres connection. Set DATABASE_URL (libpq connection string), e.g.
@@ -160,6 +164,206 @@ export async function getSeason(season: number): Promise<TeamSeason | null> {
     [season],
   );
   return rows[0] ?? null;
+}
+
+// ---------------------------------------------------------------- postseason
+
+/** Postseason series (all, or for one season), ordered by season then round. */
+export async function getPostseasonSeries(
+  season?: number,
+): Promise<PostseasonSeries[]> {
+  if (season != null) {
+    return query<PostseasonSeries>(
+      `SELECT * FROM v_postseason_series WHERE season = $1 ORDER BY round_order`,
+      [season],
+    );
+  }
+  return query<PostseasonSeries>(
+    `SELECT * FROM v_postseason_series ORDER BY season DESC, round_order`,
+  );
+}
+
+/** Postseason games for a season, in round + series-game order. */
+export async function getPostseasonGames(season: number): Promise<Game[]> {
+  return query<Game>(
+    `SELECT * FROM games
+     WHERE season = $1 AND game_type IN ('F','D','L','W') AND status_code = 'F'
+     ORDER BY CASE game_type WHEN 'F' THEN 1 WHEN 'D' THEN 2 WHEN 'L' THEN 3 WHEN 'W' THEN 4 END,
+              series_game_number`,
+    [season],
+  );
+}
+
+// ---------------------------------------------------------------- leaders
+
+export interface LeaderRow {
+  player_id: number;
+  full_name: string | null;
+  primary_position: string | null;
+  value: number | string | null;
+}
+
+// Whitelist of rankable stats (column names) — guards against SQL injection,
+// since column names can't be parameterized.
+const BATTING_STATS = new Set([
+  "home_runs", "hits", "rbi", "runs", "doubles", "triples",
+  "stolen_bases", "walks", "total_bases", "avg", "slg",
+]);
+const PITCHING_STATS = new Set([
+  "wins", "strike_outs", "saves", "era", "losses",
+]);
+const ASC_STATS = new Set(["era", "whip"]); // lower is better
+const RATE_QUALIFIER: Record<string, string> = {
+  avg: "at_bats >= 250",
+  slg: "at_bats >= 250",
+  era: "outs >= 150",
+};
+
+export type LeaderScope = "career" | "season";
+export type LeaderType = "batting" | "pitching";
+
+export async function getLeaders(opts: {
+  scope: LeaderScope;
+  type: LeaderType;
+  stat: string;
+  season?: number;
+  limit?: number;
+}): Promise<LeaderRow[]> {
+  const { scope, type, stat, season, limit = 25 } = opts;
+  const allowed = type === "batting" ? BATTING_STATS : PITCHING_STATS;
+  if (!allowed.has(stat)) return [];
+
+  const dir = ASC_STATS.has(stat) ? "ASC" : "DESC";
+  // career qualifiers as defined; season uses lighter thresholds
+  const qualBase = RATE_QUALIFIER[stat];
+  const qual = qualBase
+    ? scope === "season"
+      ? qualBase.replace("250", "100").replace("150", "90")
+      : qualBase
+    : null;
+
+  let source: string;
+  const params: unknown[] = [];
+  if (scope === "career") {
+    source =
+      type === "batting"
+        ? "mv_career_batting_leaders"
+        : "mv_career_pitching_leaders";
+  } else {
+    // season: join the season view to players for names
+    const view =
+      type === "batting"
+        ? "v_player_season_batting"
+        : "v_player_season_pitching";
+    params.push(season);
+    source = `(SELECT v.*, pl.full_name, pl.primary_position
+               FROM ${view} v JOIN players pl USING (player_id)
+               WHERE v.season = $1) s`;
+  }
+
+  const where = qual ? `WHERE ${qual}` : "";
+  const sql = `SELECT player_id, full_name, primary_position, ${stat} AS value
+               FROM ${source} ${where}
+               ORDER BY ${stat} ${dir} NULLS LAST
+               LIMIT ${Number(limit)}`;
+  return query<LeaderRow>(sql, params);
+}
+
+// ---------------------------------------------------------------- editorial
+
+export async function getTrending(): Promise<Trending[]> {
+  return query<Trending>(`SELECT * FROM trending ORDER BY position`);
+}
+
+/** Editorial "Today in History" blurbs for a calendar date. */
+export async function getTodayEditorial(
+  month: number,
+  day: number,
+): Promise<TodayHistory[]> {
+  return query<TodayHistory>(
+    `SELECT * FROM today_in_history WHERE event_month = $1 AND event_day = $2
+     ORDER BY event_year DESC`,
+    [month, day],
+  );
+}
+
+/** Mets regular-season games that fell on this calendar date (any year). */
+export async function getGameAnniversaries(
+  month: number,
+  day: number,
+): Promise<Game[]> {
+  return query<Game>(
+    `SELECT * FROM games
+     WHERE EXTRACT(MONTH FROM official_date::date) = $1
+       AND EXTRACT(DAY   FROM official_date::date) = $2
+       AND game_type = 'R' AND status_code = 'F'
+     ORDER BY season DESC`,
+    [month, day],
+  );
+}
+
+export async function getMediaCount(): Promise<number> {
+  const rows = await query<{ n: string }>(`SELECT COUNT(*) AS n FROM media_items`);
+  return rows[0] ? Number(rows[0].n) : 0;
+}
+
+export async function getMedia(opts: {
+  type?: string;
+  season?: number;
+  limit?: number;
+} = {}): Promise<MediaItem[]> {
+  const clauses: string[] = [];
+  const params: unknown[] = [];
+  if (opts.type) {
+    params.push(opts.type);
+    clauses.push(`media_type = $${params.length}`);
+  }
+  if (opts.season) {
+    params.push(opts.season);
+    clauses.push(`season = $${params.length}`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(opts.limit ?? 100);
+  return query<MediaItem>(
+    `SELECT * FROM media_items ${where}
+     ORDER BY featured DESC, published_at DESC NULLS LAST
+     LIMIT $${params.length}`,
+    params,
+  );
+}
+
+// ---------------------------------------------------------------- compare (Lab)
+
+export interface CareerBatting {
+  player_id: number;
+  full_name: string | null;
+  primary_position: string | null;
+  seasons: number;
+  games: number;
+  at_bats: number;
+  runs: number;
+  hits: number;
+  doubles: number;
+  triples: number;
+  home_runs: number;
+  rbi: number;
+  walks: number;
+  strike_outs: number;
+  stolen_bases: number;
+  total_bases: number;
+  avg: string | null;
+  slg: string | null;
+}
+
+/** Career batting totals for a set of players (for the Lab comparison). */
+export async function getCareerBattingForPlayers(
+  ids: number[],
+): Promise<CareerBatting[]> {
+  if (ids.length === 0) return [];
+  return query<CareerBatting>(
+    `SELECT * FROM mv_career_batting_leaders WHERE player_id = ANY($1::bigint[])`,
+    [ids],
+  );
 }
 
 // ---------------------------------------------------------------- site stats

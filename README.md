@@ -41,8 +41,16 @@ is still illustrative placeholder data from the original prototypes.
 | Games + linescore + box score | ✅ real | `/games` index + `/games/:gamePk` detail ✅ |
 | Players + per-game batting/pitching | ✅ real | `/players` roster + player profiles ✅ |
 | Seasons / standings | ✅ real (`team_season`) | `/seasons` index + `/seasons/:year` ✅ |
+| Leaders (career + season) | ✅ real (materialized views) | `/leaders` ✅ |
+| Postseason (series/results) | ✅ real (`v_postseason_series`) | `/postseason` + `/postseason/:year` ✅ |
 | Home hero counts | ✅ real (`v_site_stats`) | ✅ |
-| Leaders / Postseason / Lab / Media | ⬜ not yet | ⬜ still illustrative |
+| **All automatic statistical data is now wired.** | | |
+| Editorial: Media, Today in History, Trending | ✅ real (editorial tables + seed) | Home + `/media` ✅ |
+| Lab (player comparison) | ✅ real (career compare) | `/lab` ✅ |
+| **Every page is now wired to the database.** | | |
+
+Deployment to Google Cloud (Cloud SQL + Cloud Run + Cloud Scheduler) is documented in
+[DEPLOY.md](DEPLOY.md), with `web/Dockerfile` and `data-pipeline/Dockerfile`.
 | Editorial (Today in History, Trending, Media) | ⬜ tables not built | ⬜ still illustrative |
 
 Roadmap order (vertical slices — each domain goes schema → pipeline → API → page

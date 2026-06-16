@@ -14,7 +14,8 @@ echo ">> linescores" ; python3 ingest_linescores.py       # per-inning runs for 
 echo ">> players"    ; python3 ingest_players.py          # current-season roster + bios
 echo ">> standings"  ; python3 ingest_standings.py        # current-season standings line
 
-# Refresh materialized views here once they exist, e.g.:
-#   psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_career_hr_leaders;"
+echo ">> refresh leaderboards"
+psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_career_batting_leaders;"
+psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_career_pitching_leaders;"
 
 echo ">> done"

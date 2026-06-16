@@ -1,5 +1,7 @@
 // Wraps this route's content so its (global) stylesheet can be scoped under
-// .route-leaders, preventing class-name collisions with other pages.
+// .route-leaders. The CSS is imported here for the leaderboards page.
+import "./styles.css";
+
 export default function LeadersLayout({
   children,
 }: {

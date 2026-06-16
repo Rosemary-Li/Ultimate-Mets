@@ -13,8 +13,10 @@
 --
 -- Apply with: psql ultimate_mets -f views.sql   (re-run to update definitions)
 
--- Pitching views change innings_pitched's type, which CREATE OR REPLACE can't do;
--- drop them first so the file is safe to re-run.
+-- Drop dependents first: the materialized leaderboards depend on the regular
+-- career views, and the pitching views change column types (so they can't be
+-- CREATE OR REPLACE'd). This ordering keeps the whole file safe to re-run.
+DROP MATERIALIZED VIEW IF EXISTS mv_career_batting_leaders, mv_career_pitching_leaders;
 DROP VIEW IF EXISTS v_player_season_pitching, v_player_career_pitching;
 
 -- ---- Player season batting totals (Mets, regular season) ----
@@ -120,7 +122,28 @@ SELECT
     (SELECT COUNT(*) FROM games
        WHERE game_type = 'R' AND status_code = 'F')                    AS games,
     (SELECT COUNT(DISTINCT season) FROM games
-       WHERE game_type IN ('F','D','L','W'))                           AS postseasons;
+       WHERE game_type IN ('F','D','L','W'))                           AS postseasons,
+    (SELECT MIN(season) FROM games WHERE game_type = 'R')              AS first_season,
+    (SELECT MAX(season) FROM games WHERE game_type = 'R')              AS last_season;
+
+-- ---- Postseason series (grouped from postseason games) ----
+-- One row per (season, round). game_type maps to the round; round_order sorts them.
+CREATE OR REPLACE VIEW v_postseason_series AS
+SELECT
+    season,
+    game_type,
+    CASE game_type WHEN 'F' THEN 1 WHEN 'D' THEN 2 WHEN 'L' THEN 3 WHEN 'W' THEN 4 END AS round_order,
+    MAX(series_description) AS series_description,
+    COUNT(*) AS games,
+    SUM(CASE WHEN (mets_is_home = 1 AND home_is_winner = 1)
+              OR (mets_is_home = 0 AND away_is_winner = 1) THEN 1 ELSE 0 END) AS mets_wins,
+    SUM(CASE WHEN (mets_is_home = 1 AND home_is_winner = 0)
+              OR (mets_is_home = 0 AND away_is_winner = 0) THEN 1 ELSE 0 END) AS mets_losses,
+    MIN(official_date) AS start_date,
+    MAX(official_date) AS end_date
+FROM games
+WHERE game_type IN ('F','D','L','W') AND status_code = 'F'
+GROUP BY season, game_type;
 
 -- ---- Player directory: every player + an is_current flag ----
 -- "Current" = appeared for the Mets in the latest regular season present in the DB.
@@ -142,10 +165,27 @@ SELECT
 FROM players p;
 
 -- ============================================================
--- Heavy leaderboards — promote to materialized views when needed.
--- Example (career HR leaderboard) and a refresh you call after the daily load:
---
---   CREATE MATERIALIZED VIEW IF NOT EXISTS mv_career_hr_leaders AS
---     SELECT player_id, home_runs FROM v_player_career_batting ORDER BY home_runs DESC;
---   -- after the pipeline runs:  REFRESH MATERIALIZED VIEW mv_career_hr_leaders;
+-- Leaderboards — MATERIALIZED views (performance cache, refreshed daily)
 -- ============================================================
+-- Career leaderboards scan every per-game row, so we cache the career totals
+-- (joined to player names) as materialized views and REFRESH them at the end of
+-- the daily run. They are still derived from the raw tables — just precomputed.
+-- Season leaderboards query the plain season views directly (season-sized, fast).
+--
+-- (Dropped at the top of this file, before their dependency views.)
+CREATE MATERIALIZED VIEW mv_career_batting_leaders AS
+SELECT cb.*, pl.full_name, pl.primary_position
+FROM v_player_career_batting cb
+JOIN players pl USING (player_id);
+-- unique index enables REFRESH MATERIALIZED VIEW CONCURRENTLY
+CREATE UNIQUE INDEX mv_cbl_pk ON mv_career_batting_leaders (player_id);
+
+CREATE MATERIALIZED VIEW mv_career_pitching_leaders AS
+SELECT cp.*, pl.full_name, pl.primary_position
+FROM v_player_career_pitching cp
+JOIN players pl USING (player_id);
+CREATE UNIQUE INDEX mv_cpl_pk ON mv_career_pitching_leaders (player_id);
+
+-- After each daily load, refresh both:
+--   REFRESH MATERIALIZED VIEW CONCURRENTLY mv_career_batting_leaders;
+--   REFRESH MATERIALIZED VIEW CONCURRENTLY mv_career_pitching_leaders;

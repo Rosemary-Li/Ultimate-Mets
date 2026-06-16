@@ -1,8 +1,14 @@
 import "./home.css";
 import Link from "next/link";
-import { ReactNode } from "react";
 import { HREF } from "@/lib/nav";
-import { getRecentGames, getSiteStats } from "@/lib/db";
+import {
+  getRecentGames,
+  getSiteStats,
+  getMediaCount,
+  getTrending,
+  getTodayEditorial,
+  getGameAnniversaries,
+} from "@/lib/db";
 import RecentlyViewed from "@/components/RecentlyViewed";
 
 interface Entry {
@@ -20,24 +26,24 @@ const DETAIL_ENTRIES: Entry[] = [
     icon: "👤",
     title: "Players",
     href: HREF.players,
-    desc: "Career profiles for every Met — from Tom Seaver to Pete Alonso. Stats, splits, percentile rankings, and similarity scores.",
-    meta: ["1,243 players", "since 1962"],
+    desc: "Career profiles for every Met — rosters, bios, and season-by-season batting & pitching, split by current roster and historical players.",
+    meta: ["rosters + bios"],
   },
   {
     key: "seasons",
     icon: "📅",
     title: "Seasons",
     href: HREF.seasons,
-    desc: "Year-by-year breakdowns. Schedule, standings, leaders, transactions, and the postseason path for every season since 1962.",
-    meta: ["64 seasons", "1962 → 2025"],
+    desc: "Year-by-year breakdowns — record, standings finish, run differential, and the full game log for each season.",
+    meta: ["standings + game logs"],
   },
   {
     key: "games",
     icon: "⚾",
     title: "Games",
     href: HREF.games,
-    desc: "Single-game recaps with box scores, play-by-play, win-probability charts, and fan discussion threads anchored to specific moments.",
-    meta: ["10,000+ games", "with discussion"],
+    desc: "Single-game recaps with the linescore and a full box score — batting and pitching lines for both teams.",
+    meta: ["box scores + linescore"],
   },
 ];
 
@@ -47,65 +53,32 @@ const TOOL_ENTRIES: Entry[] = [
     icon: "🏆",
     title: "Leaders",
     href: HREF.leaders,
-    desc: "Career and single-season leaderboards. Filter by era, position, or playing-time minimum. Save your own custom views.",
-    meta: ["All-time rankings", "savable views"],
+    desc: "Career and single-season leaderboards — batting and pitching — computed from per-game data.",
+    meta: ["career + season"],
   },
   {
     key: "post",
     icon: "🥇",
     title: "Postseason",
     href: HREF.postseason,
-    desc: "All 11 postseason runs in one place. Series-by-series drill-down, career postseason leaders, and the franchise's most famous moments.",
-    meta: ["11 appearances", "2 WS · 5 NL pennants"],
+    desc: "Every postseason run in the database — series by series, with the Mets' result in each round and game-by-game scores.",
+    meta: ["series + results", "by year"],
   },
   {
     key: "lab",
     icon: "⚗️",
     title: "Lab",
     href: HREF.lab,
-    desc: "Side-by-side comparison tool. Stack 2–4 players, overlay career arcs, compare 5-tool grades, and run a stat-by-stat showdown.",
-    meta: ["Up to 4 players", "20-80 scouting scale"],
+    desc: "Side-by-side comparison tool. Stack 2–4 players and run a stat-by-stat showdown of their career numbers.",
+    meta: ["compare 2–4 players", "career stats"],
   },
   {
     key: "media",
     icon: "🎬",
     title: "Media",
     href: HREF.media,
-    desc: "Searchable archive of videos, photos, articles, and podcasts. Filter by era, season, or player. Browse curated collections.",
-    meta: ["12,824 items", "video · photo · audio"],
-  },
-];
-
-const TODAY_HISTORY: { year: number; t: ReactNode; meta: string }[] = [
-  {
-    year: 1981,
-    t: "Cleon Jones returns to Shea Stadium for an Old-Timers Day appearance, drawing a 12-minute standing ovation.",
-    meta: "Old-Timers Day · Shea Stadium",
-  },
-  {
-    year: 1996,
-    t: "Bernard Gilkey hits for the cycle vs the Padres — first Met to do it since Keith Hernandez in 1985.",
-    meta: "NYM 6, SDP 4 · 9 innings",
-  },
-  {
-    year: 2008,
-    t: (
-      <>
-        Pedro Martinez throws 7 shutout innings in his return from injury —{" "}
-        <Link href={HREF.games}>view game</Link>.
-      </>
-    ),
-    meta: "NYM 4, LAD 0",
-  },
-  {
-    year: 2015,
-    t: "Lucas Duda hits walk-off HR vs the Phillies in the 11th. — Mets pull within 1 game of NL East lead.",
-    meta: "NYM 5, PHI 4 (11)",
-  },
-  {
-    year: 2024,
-    t: "Pete Alonso passes Darryl Strawberry for 2nd on the franchise career HR list (253).",
-    meta: "NYM 7, ATL 3",
+    desc: "Curated archive of videos, photos, articles, and podcasts. Filter by type, era, season, or player.",
+    meta: ["video · photo · audio"],
   },
 ];
 
@@ -133,13 +106,73 @@ export default async function HomePage() {
 
   // Hero counts computed from the DB; fall back to illustrative figures if empty.
   const stats = await getSiteStats();
+  const mediaCount = await getMediaCount();
   const heroStats = [
     { num: stats?.seasons ? String(stats.seasons) : "64", lbl: "Seasons" },
     { num: stats?.players ? stats.players.toLocaleString() : "1,243", lbl: "Players" },
+    { num: stats?.games ? stats.games.toLocaleString() : "0", lbl: "Games" },
     { num: stats?.postseasons ? String(stats.postseasons) : "11", lbl: "Postseasons" },
-    { num: "2", lbl: "WS Titles" },
-    { num: "12,824", lbl: "Media Items" },
+    { num: mediaCount ? mediaCount.toLocaleString() : "0", lbl: "Media Items" },
   ];
+
+  // Real counts for the entry-card pills, keyed by section.
+  const seasonRange =
+    stats?.first_season && stats.last_season
+      ? ` (${stats.first_season}–${stats.last_season})`
+      : "";
+  const entryCounts: Record<string, string | undefined> = {
+    players: stats?.players ? `${stats.players.toLocaleString()} players` : undefined,
+    seasons: stats?.seasons
+      ? `${stats.seasons} season${stats.seasons > 1 ? "s" : ""}${seasonRange}`
+      : undefined,
+    games: stats?.games ? `${stats.games.toLocaleString()} games` : undefined,
+    media: mediaCount ? `${mediaCount.toLocaleString()} items` : undefined,
+  };
+  const searchMeta = stats
+    ? `⌘K · search across ${stats.players.toLocaleString()} players · ${stats.seasons} seasons · ${mediaCount} media items`
+    : "⌘K · search players, seasons, games";
+
+  // "Today in Mets History" — editorial blurbs + auto game anniversaries.
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const todayLabel = now.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+  });
+  const [trendingDb, editorial, anniversaries] = await Promise.all([
+    getTrending(),
+    getTodayEditorial(month, day),
+    getGameAnniversaries(month, day),
+  ]);
+  const todayEvents: { year: number | null; text: string; meta: string }[] = [
+    ...editorial.map((e) => ({
+      year: e.event_year,
+      text: e.blurb ?? e.headline ?? "",
+      meta: e.meta ?? "",
+    })),
+    ...anniversaries.map((g) => {
+      const home = g.mets_is_home === 1;
+      const ms = home ? g.home_score : g.away_score;
+      const os = home ? g.away_score : g.home_score;
+      const opp = home ? g.away_team_name : g.home_team_name;
+      const won = ms != null && os != null && ms > os;
+      return {
+        year: g.season,
+        text: `Mets ${won ? "beat" : "lost to"} the ${opp} ${ms}–${os}.`,
+        meta: `${g.official_date} · ${g.venue_name}`,
+      };
+    }),
+  ]
+    .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
+    .slice(0, 8);
+  const trendingList = trendingDb.length
+    ? trendingDb.map((t) => ({
+        name: t.title ?? "",
+        meta: t.subtitle ?? "",
+        href: t.href ?? "#",
+      }))
+    : TRENDING;
 
   return (
     <>
@@ -156,9 +189,7 @@ export default async function HomePage() {
           </p>
           <div className="hero-search">
             <input placeholder='Try "David Wright", "1986 World Series", "Pete Alonso HR"...' />
-            <div className="hero-search-meta">
-              ⌘K · search across 1,243 players · 64 seasons · 12,824 media items
-            </div>
+            <div className="hero-search-meta">{searchMeta}</div>
           </div>
           <div className="hero-stats">
             {heroStats.map((s) => (
@@ -189,6 +220,9 @@ export default async function HomePage() {
                   <div className="e-title">{e.title}</div>
                   <div className="e-desc">{e.desc}</div>
                   <div className="e-meta">
+                    {entryCounts[e.key] && (
+                      <span className="pill">{entryCounts[e.key]}</span>
+                    )}
                     {e.meta.map((m, i) => (
                       <span key={i} className="pill">
                         {m}
@@ -214,6 +248,9 @@ export default async function HomePage() {
                   <div className="e-title">{e.title}</div>
                   <div className="e-desc">{e.desc}</div>
                   <div className="e-meta">
+                    {entryCounts[e.key] && (
+                      <span className="pill">{entryCounts[e.key]}</span>
+                    )}
                     {e.meta.map((m, i) => (
                       <span key={i} className="pill">
                         {m}
@@ -276,26 +313,30 @@ export default async function HomePage() {
             <div className="section-head">
               <div>
                 <div className="section-title">
-                  Today in Mets History · May 9
+                  Today in Mets History · {todayLabel}
                 </div>
                 <div className="section-sub">
-                  5 things that happened on this date in franchise history
+                  What happened on this date — game results from the database, plus
+                  curated notes
                 </div>
               </div>
-              <a href="#" className="section-link">
-                Pick another date →
-              </a>
             </div>
             <div className="today-card">
-              {TODAY_HISTORY.map((h, i) => (
-                <div className="today-row" key={i}>
-                  <div className="today-year">{h.year}</div>
-                  <div className="today-text">
-                    <div className="t">{h.t}</div>
-                    <div className="meta">{h.meta}</div>
-                  </div>
+              {todayEvents.length === 0 ? (
+                <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
+                  Nothing recorded for {todayLabel} yet.
                 </div>
-              ))}
+              ) : (
+                todayEvents.map((h, i) => (
+                  <div className="today-row" key={i}>
+                    <div className="today-year">{h.year}</div>
+                    <div className="today-text">
+                      <div className="t">{h.text}</div>
+                      <div className="meta">{h.meta}</div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </section>
         </div>
@@ -353,7 +394,7 @@ export default async function HomePage() {
             <div className="side-title">
               <span>Trending This Week</span>
             </div>
-            {TRENDING.map((t, i) => (
+            {trendingList.map((t, i) => (
               <Link key={i} href={t.href} className="quicklink">
                 <div className="ql-name">{t.name}</div>
                 <div className="ql-meta">{t.meta}</div>

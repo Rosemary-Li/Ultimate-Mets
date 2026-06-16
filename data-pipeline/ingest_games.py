@@ -47,6 +47,7 @@ COLUMNS = [
     "home_team_id", "home_team_name", "home_score", "home_is_winner",
     "away_team_id", "away_team_name", "away_score", "away_is_winner",
     "venue_id", "venue_name", "mets_is_home",
+    "series_description", "series_game_number",
 ]
 
 
@@ -104,6 +105,8 @@ def transform(payload: dict) -> list[dict]:
                 "venue_id": venue.get("id"),
                 "venue_name": venue.get("name"),
                 "mets_is_home": 1 if home_team.get("id") == METS_TEAM_ID else 0,
+                "series_description": g.get("seriesDescription"),
+                "series_game_number": g.get("seriesGameNumber"),
             }
     return list(by_pk.values())
 

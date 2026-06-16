@@ -1,5 +1,7 @@
 // Wraps this route's content so its (global) stylesheet can be scoped under
-// .route-media, preventing class-name collisions with other pages.
+// .route-media. The CSS is imported here for the media archive page.
+import "./styles.css";
+
 export default function MediaLayout({
   children,
 }: {

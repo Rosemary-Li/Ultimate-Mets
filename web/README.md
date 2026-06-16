@@ -72,13 +72,16 @@ profile pages).
 
 ## What's real vs. illustrative
 
-| Real (from the DB) | Illustrative (prototype data, not yet wired) |
+| Real (from the DB) | Illustrative (not yet wired) |
 |---|---|
-| Home hero counts, Home "Latest Games" | Leaders |
-| `/games` index + `/games/:gamePk` (linescore + box score) | Postseason, Lab, Media |
-| `/players` roster + player profiles | "Today in History", "Trending" (editorial) |
+| Home: hero counts, Latest Games, Today in History, Trending | Lab (player comparison tool) |
+| `/games` index + `/games/:gamePk` (linescore + box score) | |
+| `/players` roster + player profiles | |
 | `/seasons` index + `/seasons/:year` detail | |
-| `/api/games`, `/api/players`, `/api/seasons` | |
+| `/leaders` (career + season leaderboards) | |
+| `/postseason` + `/postseason/:year` | |
+| `/media` archive (editorial) | |
+| API: games, players, seasons, leaders, postseason, media, today | |
 
 ## Known follow-ups
 
