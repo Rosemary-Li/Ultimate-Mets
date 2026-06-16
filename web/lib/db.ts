@@ -6,6 +6,9 @@ import type {
   SeasonPitching,
   SiteStats,
   TeamSeason,
+  BoxBatting,
+  BoxPitching,
+  LinescoreInning,
 } from "./types";
 
 // Postgres connection. Set DATABASE_URL (libpq connection string), e.g.
@@ -54,6 +57,39 @@ export async function getGame(gamePk: number): Promise<Game | null> {
     gamePk,
   ]);
   return rows[0] ?? null;
+}
+
+/** Box-score batting lines for a game (both teams), joined to player names. */
+export async function getGameBatting(gamePk: number): Promise<BoxBatting[]> {
+  return query<BoxBatting>(
+    `SELECT b.player_id, pl.full_name, b.team_id, b.is_mets, b.batting_order,
+            b.position, b.at_bats, b.runs, b.hits, b.doubles, b.triples,
+            b.home_runs, b.rbi, b.walks, b.strike_outs, b.stolen_bases
+     FROM batting_stats b LEFT JOIN players pl USING (player_id)
+     WHERE b.game_pk = $1
+     ORDER BY b.is_mets DESC, b.batting_order NULLS LAST, b.at_bats DESC`,
+    [gamePk],
+  );
+}
+
+/** Box-score pitching lines for a game (both teams), joined to player names. */
+export async function getGamePitching(gamePk: number): Promise<BoxPitching[]> {
+  return query<BoxPitching>(
+    `SELECT p.player_id, pl.full_name, p.team_id, p.is_mets, p.innings_pitched,
+            p.hits, p.runs, p.earned_runs, p.walks, p.strike_outs, p.home_runs
+     FROM pitching_stats p LEFT JOIN players pl USING (player_id)
+     WHERE p.game_pk = $1
+     ORDER BY p.is_mets DESC, p.games_started DESC NULLS LAST, p.outs DESC`,
+    [gamePk],
+  );
+}
+
+/** Per-inning linescore for a game. */
+export async function getLinescore(gamePk: number): Promise<LinescoreInning[]> {
+  return query<LinescoreInning>(
+    `SELECT * FROM game_linescore WHERE game_pk = $1 ORDER BY inning_num`,
+    [gamePk],
+  );
 }
 
 /** Games for a season, in chronological order. */

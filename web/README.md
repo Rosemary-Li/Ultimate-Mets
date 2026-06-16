@@ -74,9 +74,10 @@ profile pages).
 
 | Real (from the DB) | Illustrative (prototype data, not yet wired) |
 |---|---|
-| Home hero counts, Home "Latest Games" | Games detail page, Leaders |
-| `/players` roster + player profiles | Postseason, Lab, Media |
-| `/seasons` index + `/seasons/:year` detail | "Today in History", "Trending" (editorial) |
+| Home hero counts, Home "Latest Games" | Leaders |
+| `/games` index + `/games/:gamePk` (linescore + box score) | Postseason, Lab, Media |
+| `/players` roster + player profiles | "Today in History", "Trending" (editorial) |
+| `/seasons` index + `/seasons/:year` detail | |
 | `/api/games`, `/api/players`, `/api/seasons` | |
 
 ## Known follow-ups

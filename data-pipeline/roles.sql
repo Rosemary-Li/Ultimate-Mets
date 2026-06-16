@@ -34,11 +34,11 @@ GRANT USAGE  ON SCHEMA public            TO mets_pipeline, mets_web, mets_editor
 -- ---- auto-data tables: pipeline writes, web reads ----
 -- (List tables explicitly so editorial tables are never swept in by a blanket grant.)
 GRANT SELECT, INSERT, UPDATE, DELETE
-  ON games, players, batting_stats, pitching_stats, team_season
+  ON games, players, batting_stats, pitching_stats, team_season, game_linescore
   TO mets_pipeline;
 
 GRANT SELECT
-  ON games, players, batting_stats, pitching_stats, team_season
+  ON games, players, batting_stats, pitching_stats, team_season, game_linescore
   TO mets_web;
 
 -- ---- editorial tables (created by schema_editorial.sql): editor writes, web reads ----

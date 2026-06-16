@@ -147,3 +147,17 @@ CREATE TABLE IF NOT EXISTS team_season (
     streak         TEXT,        -- final streak code, e.g. 'L1' (point-in-time)
     updated_at     TIMESTAMPTZ DEFAULT now()
 );
+
+-- One row per (game, inning): the linescore grid. Totals (R/H/E) are SUM()s.
+CREATE TABLE IF NOT EXISTS game_linescore (
+    game_pk      BIGINT  NOT NULL,
+    inning_num   INTEGER NOT NULL,
+    away_runs    INTEGER,
+    home_runs    INTEGER,
+    away_hits    INTEGER,
+    home_hits    INTEGER,
+    away_errors  INTEGER,
+    home_errors  INTEGER,
+    updated_at   TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (game_pk, inning_num)
+);

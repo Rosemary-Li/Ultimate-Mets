@@ -38,7 +38,7 @@ is still illustrative placeholder data from the original prototypes.
 
 | Domain | In the database | Page wired to real data |
 |---|---|---|
-| Games | ✅ real | Home "Latest Games" strip ✅ · Games detail page ⬜ (still prototype) |
+| Games + linescore + box score | ✅ real | `/games` index + `/games/:gamePk` detail ✅ |
 | Players + per-game batting/pitching | ✅ real | `/players` roster + player profiles ✅ |
 | Seasons / standings | ✅ real (`team_season`) | `/seasons` index + `/seasons/:year` ✅ |
 | Home hero counts | ✅ real (`v_site_stats`) | ✅ |

@@ -1,5 +1,8 @@
 // Wraps this route's content so its (global) stylesheet can be scoped under
-// .route-games, preventing class-name collisions with other pages.
+// .route-games. The CSS is imported here so both the games index and the
+// [gamePk] detail inherit it.
+import "./styles.css";
+
 export default function GamesLayout({
   children,
 }: {

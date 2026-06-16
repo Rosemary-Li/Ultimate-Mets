@@ -94,6 +94,50 @@ export interface SiteStats {
   postseasons: number;
 }
 
+export interface BoxBatting {
+  player_id: number;
+  full_name: string | null;
+  team_id: number | null;
+  is_mets: number | null;
+  batting_order: number | null;
+  position: string | null;
+  at_bats: number | null;
+  runs: number | null;
+  hits: number | null;
+  doubles: number | null;
+  triples: number | null;
+  home_runs: number | null;
+  rbi: number | null;
+  walks: number | null;
+  strike_outs: number | null;
+  stolen_bases: number | null;
+}
+
+export interface BoxPitching {
+  player_id: number;
+  full_name: string | null;
+  team_id: number | null;
+  is_mets: number | null;
+  innings_pitched: string | null;
+  hits: number | null;
+  runs: number | null;
+  earned_runs: number | null;
+  walks: number | null;
+  strike_outs: number | null;
+  home_runs: number | null;
+}
+
+export interface LinescoreInning {
+  game_pk: number;
+  inning_num: number;
+  away_runs: number | null;
+  home_runs: number | null;
+  away_hits: number | null;
+  home_hits: number | null;
+  away_errors: number | null;
+  home_errors: number | null;
+}
+
 export interface TeamSeason {
   season: number;
   team_id: number | null;
