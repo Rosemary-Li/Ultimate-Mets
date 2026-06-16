@@ -43,6 +43,9 @@ export interface Player {
   mlb_debut_date: string | null;
   name_slug: string | null;
   active: boolean | null;
+  // present when listed via the directory view: appeared for the Mets in the
+  // latest season in the DB.
+  is_current?: boolean;
 }
 
 export interface SeasonBatting {
@@ -89,4 +92,20 @@ export interface SiteStats {
   players: number;
   games: number;
   postseasons: number;
+}
+
+export interface TeamSeason {
+  season: number;
+  team_id: number | null;
+  wins: number | null;
+  losses: number | null;
+  win_pct: string | null;
+  games_back: string | null;
+  division_id: number | null;
+  division_rank: string | null;
+  league_rank: string | null;
+  runs_scored: number | null;
+  runs_allowed: number | null;
+  run_diff: number | null;
+  streak: string | null;
 }

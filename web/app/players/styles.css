@@ -84,6 +84,26 @@
   padding: 40px 0;
   text-align: center;
 }
+.route-players .pl-group-title {
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  margin: 22px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.route-players .pl-count {
+  font-family: var(--num-font);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: #f3f4f6;
+  padding: 2px 9px;
+  border-radius: 12px;
+}
 
 /* player profile header */
 .route-players .pl-hero {

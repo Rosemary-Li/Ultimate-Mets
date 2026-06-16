@@ -5,6 +5,7 @@ import type {
   SeasonBatting,
   SeasonPitching,
   SiteStats,
+  TeamSeason,
 } from "./types";
 
 // Postgres connection. Set DATABASE_URL (libpq connection string), e.g.
@@ -40,7 +41,7 @@ async function query<T>(sql: string, params: unknown[] = []): Promise<T[]> {
 export async function getRecentGames(limit = 10): Promise<Game[]> {
   return query<Game>(
     `SELECT * FROM games
-     WHERE status_code = 'F'
+     WHERE status_code = 'F' AND game_type NOT IN ('S', 'E', 'A')
      ORDER BY official_date DESC, game_number DESC
      LIMIT $1`,
     [limit],
@@ -65,18 +66,22 @@ export async function getGamesBySeason(season: number): Promise<Game[]> {
 
 // ---------------------------------------------------------------- players
 
-/** Roster list, optionally filtered by a name search. */
-export async function getPlayers(search?: string, limit = 500): Promise<Player[]> {
+/**
+ * Player directory (includes the is_current flag), optionally filtered by name.
+ * is_current = appeared for the Mets in the latest season in the DB.
+ */
+export async function getPlayers(search?: string, limit = 1000): Promise<Player[]> {
   if (search) {
     return query<Player>(
-      `SELECT * FROM players WHERE full_name ILIKE $1
+      `SELECT * FROM v_player_directory WHERE full_name ILIKE $1
        ORDER BY full_name LIMIT $2`,
       [`%${search}%`, limit],
     );
   }
-  return query<Player>(`SELECT * FROM players ORDER BY full_name LIMIT $1`, [
-    limit,
-  ]);
+  return query<Player>(
+    `SELECT * FROM v_player_directory ORDER BY full_name LIMIT $1`,
+    [limit],
+  );
 }
 
 export async function getPlayer(playerId: number): Promise<Player | null> {
@@ -103,6 +108,22 @@ export async function getPlayerSeasonPitching(
     `SELECT * FROM v_player_season_pitching WHERE player_id = $1 ORDER BY season`,
     [playerId],
   );
+}
+
+// ---------------------------------------------------------------- seasons
+
+/** All Mets seasons in the DB, newest first. */
+export async function getSeasons(): Promise<TeamSeason[]> {
+  return query<TeamSeason>(`SELECT * FROM team_season ORDER BY season DESC`);
+}
+
+/** A single season's standings line, or null. */
+export async function getSeason(season: number): Promise<TeamSeason | null> {
+  const rows = await query<TeamSeason>(
+    `SELECT * FROM team_season WHERE season = $1`,
+    [season],
+  );
+  return rows[0] ?? null;
 }
 
 // ---------------------------------------------------------------- site stats

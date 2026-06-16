@@ -69,8 +69,13 @@ def fetch_schedule(start_date: str, end_date: str) -> dict:
 
 # -------------------------------------------------------------- transform
 def transform(payload: dict) -> list[dict]:
-    """Flatten the schedule JSON into rows matching the table columns."""
-    rows = []
+    """Flatten the schedule JSON into rows matching the table columns.
+
+    Deduplicates by game_pk: the schedule can list the same game under more than
+    one date (suspended/resumed games), and a single UPSERT can't touch the same
+    primary key twice. Keep the last occurrence.
+    """
+    by_pk: dict[int, dict] = {}
     for date in payload.get("dates", []):
         for g in date.get("games", []):
             teams = g.get("teams", {})
@@ -78,7 +83,7 @@ def transform(payload: dict) -> list[dict]:
             home_team, away_team = home.get("team", {}), away.get("team", {})
             venue = g.get("venue", {})
             status = g.get("status", {})
-            rows.append({
+            by_pk[g["gamePk"]] = {
                 "game_pk": g["gamePk"],
                 "official_date": g.get("officialDate"),
                 "game_datetime": g.get("gameDate"),
@@ -99,8 +104,8 @@ def transform(payload: dict) -> list[dict]:
                 "venue_id": venue.get("id"),
                 "venue_name": venue.get("name"),
                 "mets_is_home": 1 if home_team.get("id") == METS_TEAM_ID else 0,
-            })
-    return rows
+            }
+    return list(by_pk.values())
 
 
 def _as_bool(v):

@@ -124,3 +124,26 @@ CREATE TABLE IF NOT EXISTS pitching_stats (
 );
 CREATE INDEX IF NOT EXISTS idx_pitching_player ON pitching_stats (player_id);
 CREATE INDEX IF NOT EXISTS idx_pitching_season ON pitching_stats (season);
+
+
+-- ============================================================
+-- Seasons domain (auto data — written by the pipeline)
+-- ============================================================
+
+-- One row per Mets season: end-of-season standings line from /standings.
+CREATE TABLE IF NOT EXISTS team_season (
+    season         INTEGER PRIMARY KEY,
+    team_id        INTEGER,
+    wins           INTEGER,
+    losses         INTEGER,
+    win_pct        TEXT,        -- '.549'
+    games_back     TEXT,        -- '6.0' or '-' for the leader
+    division_id    INTEGER,
+    division_rank  TEXT,        -- '3'
+    league_rank    TEXT,        -- '5'
+    runs_scored    INTEGER,
+    runs_allowed   INTEGER,
+    run_diff       INTEGER,     -- runs_scored - runs_allowed
+    streak         TEXT,        -- final streak code, e.g. 'L1' (point-in-time)
+    updated_at     TIMESTAMPTZ DEFAULT now()
+);

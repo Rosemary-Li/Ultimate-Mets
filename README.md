@@ -40,8 +40,9 @@ is still illustrative placeholder data from the original prototypes.
 |---|---|---|
 | Games | ✅ real | Home "Latest Games" strip ✅ · Games detail page ⬜ (still prototype) |
 | Players + per-game batting/pitching | ✅ real | `/players` roster + player profiles ✅ |
+| Seasons / standings | ✅ real (`team_season`) | `/seasons` index + `/seasons/:year` ✅ |
 | Home hero counts | ✅ real (`v_site_stats`) | ✅ |
-| Seasons / Leaders / Postseason / Lab / Media | ⬜ not yet | ⬜ still illustrative |
+| Leaders / Postseason / Lab / Media | ⬜ not yet | ⬜ still illustrative |
 | Editorial (Today in History, Trending, Media) | ⬜ tables not built | ⬜ still illustrative |
 
 Roadmap order (vertical slices — each domain goes schema → pipeline → API → page

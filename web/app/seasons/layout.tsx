@@ -1,5 +1,8 @@
 // Wraps this route's content so its (global) stylesheet can be scoped under
-// .route-seasons, preventing class-name collisions with other pages.
+// .route-seasons. The CSS is imported here so both the season index and the
+// [year] detail inherit it.
+import "./styles.css";
+
 export default function SeasonsLayout({
   children,
 }: {

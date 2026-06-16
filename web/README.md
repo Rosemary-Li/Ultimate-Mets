@@ -65,6 +65,7 @@ API server). Connection comes from `DATABASE_URL`.
 
 - `GET /api/games` · `?season=2024` · `/api/games/:gamePk`
 - `GET /api/players` · `?q=<name>` · `/api/players/:playerId` (bio + season batting/pitching)
+- `GET /api/seasons` · `/api/seasons/:year` (standings line + that season's games)
 
 Server components also read the DB directly (e.g. the home hero counts and the player
 profile pages).
@@ -73,9 +74,10 @@ profile pages).
 
 | Real (from the DB) | Illustrative (prototype data, not yet wired) |
 |---|---|
-| Home hero counts, Home "Latest Games" | Games detail page, Seasons, Leaders |
+| Home hero counts, Home "Latest Games" | Games detail page, Leaders |
 | `/players` roster + player profiles | Postseason, Lab, Media |
-| `/api/games`, `/api/players` | "Today in History", "Trending" (editorial) |
+| `/seasons` index + `/seasons/:year` detail | "Today in History", "Trending" (editorial) |
+| `/api/games`, `/api/players`, `/api/seasons` | |
 
 ## Known follow-ups
 
