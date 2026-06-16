@@ -1,88 +1,87 @@
 # Ultimate Mets — Web App
 
-A full-stack [Next.js](https://nextjs.org) (App Router, TypeScript) application that
-unifies the eight standalone HTML prototypes into one project with a shared layout,
-a single navigation bar, and a backend that reads live data from the MLB data
-pipeline.
+A full-stack [Next.js](https://nextjs.org) (App Router, TypeScript) application: one
+project for both the UI and the API. It unifies the eight original HTML prototypes
+into a single app with a shared layout and navigation, and reads live data from the
+PostgreSQL database the data pipeline writes.
 
 ## Quick start
 
 ```bash
 cd web
 npm install
+echo "DATABASE_URL=postgresql://localhost:5432/ultimate_mets" > .env.local
 npm run dev      # http://localhost:3000
 ```
 
-`npm run build && npm start` runs the production build.
+`npm run build && npm start` runs the production build. If the database is empty or
+unavailable, data-backed sections return empty and the rest falls back to illustrative
+content — the site still renders.
 
-## How it's structured
+## Structure
 
 ```
 app/
   layout.tsx          Root layout — renders the shared TopBar + Footer on EVERY page
   globals.css         Design tokens + shared chrome (top bar, footer, modal)
-  page.tsx            Home (was index.html); shows live "Latest Games" from the DB
-  api/games/          REST API backed by the pipeline's PostgreSQL database
-  players/  seasons/  games/  leaders/  postseason/  lab/  media/
-                      One route per former prototype. Each has:
-                        page.tsx     the ported UI
-                        styles.css   the page's CSS, scoped under .route-<name>
-                        layout.tsx   wraps the page in .route-<name> for that scope
+  page.tsx            Home — real hero counts (v_site_stats) + real "Latest Games"
+  api/
+    games/            GET /api/games, /api/games?season=, /api/games/:gamePk
+    players/          GET /api/players, /api/players?q=, /api/players/:playerId
+  players/            DATA-DRIVEN: roster index (page.tsx) + profile ([playerId])
+    layout.tsx          scopes CSS under .route-players + imports styles.css
+  seasons/ games/ leaders/ postseason/ lab/ media/
+                      Still the ported prototypes (illustrative data, not yet wired)
+                      Each: page.tsx + styles.css + layout.tsx (.route-<name> scope)
 components/
   TopBar.tsx          The ONE nav bar, defined once, used everywhere
   Footer.tsx, SignInModal.tsx, RecentlyViewed.tsx, RecentTracker.tsx
 lib/
   nav.ts              Single source of truth for nav items + section colors
-  db.ts               Reads the shared PostgreSQL database via the `pg` client (Pool)
-  types.ts            Shared types (Game mirrors the pipeline's games table)
+  db.ts               Postgres access via the `pg` client (Pool); queries return []
+                      on error so the UI degrades gracefully
+  types.ts            Shared types (Game, Player, SeasonBatting/Pitching, SiteStats)
 ```
 
 ### One navigation bar, defined once
 
 The old prototypes each defined their own `TopBar`, so the nav bar drifted between
 pages. Here the bar lives in a single component ([components/TopBar.tsx](components/TopBar.tsx))
-rendered by the root layout, and its links come from one config
-([lib/nav.ts](lib/nav.ts)). The active item is detected automatically via
-`usePathname()`. Adding or changing a menu item is a one-line edit that updates every
-page at once.
+rendered by the root layout, with links from one config ([lib/nav.ts](lib/nav.ts)) and
+the active item detected via `usePathname()`. Changing a menu item is a one-line edit
+that updates every page.
 
 ### Page CSS is scoped to avoid cross-page bleed
 
-Each page's stylesheet is global in Next.js, and many pages reuse class names like
-`.card` and `.tabs` with different rules. To stop them colliding after client-side
-navigation, every page's `styles.css` is prefixed with a `.route-<name>` scope, and
-the matching `layout.tsx` wraps the page in `<div className="route-<name>">`. Shared
-chrome (top bar, footer) stays global in `globals.css`.
+Each page's stylesheet is global in Next.js, and pages reuse class names (`.card`,
+`.tabs`) with different rules. To stop collisions after client-side navigation, every
+page's CSS is prefixed with a `.route-<name>` scope and the route's `layout.tsx` wraps
+the page in `<div className="route-<name>">`. Shared chrome stays global in `globals.css`.
 
 ## Backend (front-end + back-end in one app)
 
-API route handlers query the same PostgreSQL database the Python pipeline writes to,
-using the `pg` client (no separate API server needed):
+API route handlers query the shared PostgreSQL database via the `pg` client (no separate
+API server). Connection comes from `DATABASE_URL`.
 
-- `GET /api/games` — most recent final games
-- `GET /api/games?season=2024` — all games in a season
-- `GET /api/games/:gamePk` — a single game by MLB `game_pk`
+- `GET /api/games` · `?season=2024` · `/api/games/:gamePk`
+- `GET /api/players` · `?q=<name>` · `/api/players/:playerId` (bio + season batting/pitching)
 
-The home page's "Latest Games" strip is rendered server-side from the same data. If the
-database is unavailable or empty, queries gracefully return empty and the rest of the
-site still works on its illustrative data.
+Server components also read the DB directly (e.g. the home hero counts and the player
+profile pages).
 
-Set the connection via the `DATABASE_URL` environment variable (libpq connection
-string), e.g. `postgresql://localhost:5432/ultimate_mets`. Create a `.env.local` in
-`web/` with `DATABASE_URL=...` for local development.
+## What's real vs. illustrative
 
-## Data status
-
-The `games` data is real (from the pipeline). Player, leader, postseason, media, and
-comparison pages still use the illustrative data carried over from the prototypes —
-wire these to the database as the pipeline grows to player-level granularity
-(boxscore tables).
+| Real (from the DB) | Illustrative (prototype data, not yet wired) |
+|---|---|
+| Home hero counts, Home "Latest Games" | Games detail page, Seasons, Leaders |
+| `/players` roster + player profiles | Postseason, Lab, Media |
+| `/api/games`, `/api/players` | "Today in History", "Trending" (editorial) |
 
 ## Known follow-ups
 
 - **Type-checking is disabled during build** (`next.config.mjs` →
-  `typescript.ignoreBuildErrors`). The pages were ported from untyped JS prototypes;
-  they run correctly but their inline data shapes aren't fully typed yet. Tighten
-  incrementally, then re-enable type-checked builds.
-- The old `legacy-prototypes/` HTML files are kept for reference and can be deleted
-  once this app is confirmed to cover everything.
+  `typescript.ignoreBuildErrors`). The not-yet-wired pages were ported from untyped JS
+  prototypes; they run but aren't fully typed. The `lib/`, `app/api/`, `app/players/`,
+  and `app/page.tsx` code is properly typed. Tighten the rest, then re-enable.
+- Wire the remaining pages to the DB as each data domain lands in the pipeline
+  (Seasons/Standings → Leaders → Postseason → editorial content).
