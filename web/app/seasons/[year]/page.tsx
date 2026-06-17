@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSeason, getGamesBySeason } from "@/lib/db";
 import type { Game } from "@/lib/types";
+import Discussion from "@/components/Discussion";
 
 export const dynamic = "force-dynamic";
 
@@ -130,6 +131,7 @@ export default async function SeasonDetailPage({
         <p className="se-note">
           Standings from MLB; game log aggregated from the games table.
         </p>
+        <Discussion targetType="season" targetId={season} />
       </div>
     </>
   );

@@ -25,7 +25,7 @@ const connectionString =
 // on every change.
 const globalForPg = globalThis as unknown as { _metsPool?: Pool };
 
-function getPool(): Pool {
+export function getPool(): Pool {
   if (!globalForPg._metsPool) {
     globalForPg._metsPool = new Pool({ connectionString, max: 5 });
   }

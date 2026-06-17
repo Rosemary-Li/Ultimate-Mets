@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import TopBar from "@/components/TopBar";
 import Footer from "@/components/Footer";
+import AuthProvider from "@/components/AuthProvider";
 
 export const metadata: Metadata = {
   title: "Ultimate Mets Database",
@@ -29,9 +30,11 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <TopBar />
-        {children}
-        <Footer />
+        <AuthProvider>
+          <TopBar />
+          {children}
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

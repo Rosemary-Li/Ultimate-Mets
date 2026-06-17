@@ -8,6 +8,7 @@ import {
 } from "@/lib/db";
 import type { BoxBatting, BoxPitching, LinescoreInning } from "@/lib/types";
 import { headshot, teamLogo } from "@/lib/images";
+import Discussion from "@/components/Discussion";
 
 export const dynamic = "force-dynamic";
 
@@ -259,6 +260,7 @@ export default async function GameDetailPage({
         <p className="ga-note">
           Box score and linescore from MLB game data.
         </p>
+        <Discussion targetType="game" targetId={id} />
       </div>
     </>
   );

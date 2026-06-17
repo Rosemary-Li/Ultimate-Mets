@@ -8,6 +8,7 @@ import {
 import type { SeasonBatting, SeasonPitching } from "@/lib/types";
 import ChartView from "@/components/ChartView";
 import { headshotLarge } from "@/lib/images";
+import Discussion from "@/components/Discussion";
 
 export const dynamic = "force-dynamic";
 
@@ -184,6 +185,7 @@ export default async function PlayerProfilePage({
           Stats are aggregated from per-game boxscore data (Mets games), recomputed
           live from the database.
         </p>
+        <Discussion targetType="player" targetId={id} />
       </div>
     </>
   );
