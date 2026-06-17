@@ -22,12 +22,35 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-light);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.route-leaders .le-group.on {
+  color: var(--mets-blue);
+}
+.route-leaders .le-viewing {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--mets-orange);
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  padding: 1px 7px;
+  border-radius: 10px;
 }
 .route-leaders .le-presets {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 6px;
+}
+/* de-emphasize the scope you're not currently viewing (the two are exclusive) */
+.route-leaders .le-presets.dim {
+  opacity: 0.5;
+}
+.route-leaders .le-presets.dim:hover {
+  opacity: 1;
 }
 .route-leaders .le-chip {
   font-size: 12.5px;
@@ -134,6 +157,11 @@
   height: 100%;
   background: var(--mets-orange);
   border-radius: 4px;
+}
+/* "lower is better" boards (ERA/WHIP): blue bar signals a different scale —
+   longest = best (lowest), not highest value */
+.route-leaders .le-bar.rate {
+  background: var(--mets-blue);
 }
 .route-leaders .le-num {
   min-width: 46px;

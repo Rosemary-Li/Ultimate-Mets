@@ -104,6 +104,61 @@ export async function getGamesBySeason(season: number): Promise<Game[]> {
   );
 }
 
+/** Distinct regular-season years that have games, newest first. */
+export async function getGameSeasons(): Promise<number[]> {
+  const rows = await query<{ season: number }>(
+    `SELECT DISTINCT season FROM games
+     WHERE game_type = 'R' AND season IS NOT NULL
+     ORDER BY season DESC`,
+  );
+  return rows.map((r) => r.season);
+}
+
+export interface GameLogRow extends Game {
+  mets_won: number;
+  running_w: number;
+  running_l: number;
+  win_pitcher: string | null;
+  loss_pitcher: string | null;
+  save_pitcher: string | null;
+}
+
+/**
+ * A full regular-season game log (newest first), enriched without any new
+ * ingest: running W–L record (window function over the season) and the
+ * winning / losing / save pitchers (per-game decision flags in pitching_stats).
+ */
+export async function getSeasonGameLog(season: number): Promise<GameLogRow[]> {
+  return query<GameLogRow>(
+    `WITH base AS (
+       SELECT *,
+         CASE WHEN (mets_is_home = 1 AND home_is_winner = 1)
+                OR (mets_is_home = 0 AND away_is_winner = 1)
+              THEN 1 ELSE 0 END AS mets_won
+       FROM games
+       WHERE season = $1 AND game_type = 'R' AND status_code = 'F'
+     ),
+     running AS (
+       SELECT *,
+         SUM(mets_won)     OVER w AS running_w,
+         SUM(1 - mets_won) OVER w AS running_l
+       FROM base
+       WINDOW w AS (ORDER BY official_date, game_number
+                    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+     )
+     SELECT r.*,
+       (SELECT pl.full_name FROM pitching_stats ps JOIN players pl USING (player_id)
+          WHERE ps.game_pk = r.game_pk AND ps.wins   = 1 LIMIT 1) AS win_pitcher,
+       (SELECT pl.full_name FROM pitching_stats ps JOIN players pl USING (player_id)
+          WHERE ps.game_pk = r.game_pk AND ps.losses = 1 LIMIT 1) AS loss_pitcher,
+       (SELECT pl.full_name FROM pitching_stats ps JOIN players pl USING (player_id)
+          WHERE ps.game_pk = r.game_pk AND ps.saves  = 1 LIMIT 1) AS save_pitcher
+     FROM running r
+     ORDER BY r.official_date DESC, r.game_number DESC`,
+    [season],
+  );
+}
+
 // ---------------------------------------------------------------- players
 
 /**
@@ -355,24 +410,9 @@ export async function getAutoTrending(): Promise<TrendingItem[]> {
   const items: TrendingItem[] = [];
   const seen = new Set<number>();
 
-  // most recent final game
-  const lg = await query<Game>(
-    `SELECT * FROM games WHERE status_code='F' AND game_type NOT IN ('S','E','A')
-     ORDER BY official_date DESC, game_number DESC LIMIT 1`,
-  );
-  if (lg[0]) {
-    const g = lg[0];
-    const home = g.mets_is_home === 1;
-    const ms = home ? g.home_score : g.away_score;
-    const os = home ? g.away_score : g.home_score;
-    const opp = home ? g.away_team_name : g.home_team_name;
-    const won = ms != null && os != null && ms > os;
-    items.push({
-      title: `${won ? "W" : "L"} ${home ? "vs" : "@"} ${opp} ${ms}–${os}`,
-      subtitle: `Latest game · ${g.official_date}`,
-      href: `/games/${g.game_pk}`,
-    });
-  }
+  // NOTE: the most-recent game already has its own prominent "Latest Game" card
+  // on the homepage, so it's intentionally NOT repeated here — Trending leads
+  // with notable performers (season & career leaders) and the latest playoff run.
 
   // current-season leaders (HR, strikeouts)
   const latest = await query<{ season: number }>(
@@ -492,6 +532,21 @@ export async function getMedia(opts: {
      LIMIT $${params.length}`,
     params,
   );
+}
+
+/**
+ * game_pk → official MLB.com recap article URL, for the games that have one.
+ * Used to point video/photo cards at an MLB.com page instead of a raw asset.
+ */
+export async function getGameArticleLinks(): Promise<Record<number, string>> {
+  const rows = await query<{ game_pk: number; url: string }>(
+    `SELECT DISTINCT ON (game_pk) game_pk, url FROM media_items
+     WHERE media_type = 'article' AND game_pk IS NOT NULL AND url IS NOT NULL
+     ORDER BY game_pk, published_at DESC NULLS LAST`,
+  );
+  const m: Record<number, string> = {};
+  for (const r of rows) m[r.game_pk] = r.url;
+  return m;
 }
 
 /** Distinct seasons that have media, newest first (for filter chips). */

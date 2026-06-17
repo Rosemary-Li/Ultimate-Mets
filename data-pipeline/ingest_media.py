@@ -37,17 +37,6 @@ COLUMNS = [
 ]
 
 
-def pick_mp4(playbacks: list) -> str | None:
-    mp4s = [p.get("url") for p in playbacks if (p.get("url") or "").endswith(".mp4")]
-    if not mp4s:
-        return playbacks[0].get("url") if playbacks else None
-    # prefer a ~720p cut
-    for m in mp4s:
-        if "1280x720" in m:
-            return m
-    return mp4s[0]
-
-
 def pick_thumb(image: dict) -> str | None:
     cuts = (image or {}).get("cuts", [])
     if not cuts:
@@ -90,13 +79,20 @@ def extract(content: dict, game_pk: int, season: int, per_game: int) -> list[dic
         ext = it.get("id") or it.get("mediaPlaybackId")
         if not ext:
             continue
+        # Link, don't host: point at the MLB.com video page (or the game's
+        # gameday page), never the raw .mp4 asset on the CDN.
+        slug = it.get("slug")
+        page_url = (
+            f"https://www.mlb.com/video/{slug}" if slug
+            else f"https://www.mlb.com/gameday/{game_pk}"
+        )
         rows.append({
             "external_id": str(ext),
             "media_type": "video",
             "title": it.get("title") or it.get("headline"),
             "description": it.get("description") or it.get("blurb"),
             "season": season, "game_pk": game_pk, "source": "MLB",
-            "url": pick_mp4(it.get("playbacks", [])),
+            "url": page_url,
             "thumb_url": pick_thumb(it.get("image", {})),
             "published_at": (it.get("date") or "")[:10] or None,
             "duration": it.get("duration"),
@@ -130,7 +126,9 @@ def extract(content: dict, game_pk: int, season: int, per_game: int) -> list[dic
                 "title": node.get("headline"),
                 "description": None,
                 "season": season, "game_pk": game_pk, "source": "MLB",
-                "url": full,
+                # link to the MLB.com recap page that hosts the image, not the
+                # raw asset URL (link, don't host).
+                "url": f"https://www.mlb.com/news/{slug}",
                 "thumb_url": thumb,
                 "published_at": (node.get("date") or "")[:10] or None,
                 "duration": None, "featured": False,

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import TopBar from "@/components/TopBar";
 import Footer from "@/components/Footer";
-import RecentTracker from "@/components/RecentTracker";
 
 export const metadata: Metadata = {
   title: "Ultimate Mets Database",
@@ -31,7 +30,6 @@ export default function RootLayout({
       </head>
       <body>
         <TopBar />
-        <RecentTracker />
         {children}
         <Footer />
       </body>

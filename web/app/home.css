@@ -52,6 +52,12 @@
   color: rgba(255, 255, 255, 0.7);
   margin-top: 5px;
 }
+.hm-stats-note {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 16px;
+  max-width: 460px;
+}
 /* headshot band */
 .hm-faces {
   display: flex;
@@ -289,6 +295,8 @@
   display: block;
   height: 100%;
   background: linear-gradient(90deg, var(--mets-blue), var(--mets-orange));
+  background-repeat: no-repeat;
+  background-position: left center;
   border-radius: 5px;
 }
 .hm-leader-val {
@@ -305,10 +313,20 @@
 }
 
 /* ---------------- EXPLORE TILES ---------------- */
+/* 4-col grid; the 7th tile (Media) spans 2 columns so the second row fills the
+   width completely — a clean rectangle with no orphan tile. */
 .hm-explore {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
+}
+.hm-explore > :last-child {
+  grid-column: span 2;
+}
+@media (max-width: 720px) {
+  .hm-explore {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 .hm-tile {
   display: flex;
@@ -397,77 +415,4 @@
 .hm-today .tx {
   font-size: 12.5px;
   line-height: 1.4;
-}
-
-/* ---------------- Recently Viewed (kept from component) ---------------- */
-.side-card {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px 18px;
-}
-.side-title {
-  font-size: 15px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-.side-title .clr {
-  font-size: 11px;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-weight: 500;
-  text-transform: none;
-}
-.side-title .clr:hover {
-  color: var(--mets-orange);
-}
-.recent-row {
-  display: flex;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid #f3f4f6;
-  align-items: center;
-}
-.recent-row:last-child {
-  border-bottom: none;
-}
-.recent-tag {
-  font-size: 9.5px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: white;
-}
-.recent-tag.players { background: var(--c-players); }
-.recent-tag.seasons { background: var(--c-seasons); }
-.recent-tag.games { background: var(--c-games); }
-.recent-tag.leaders { background: var(--c-leaders); }
-.recent-tag.postseason { background: var(--c-postseason); }
-.recent-tag.lab { background: var(--c-lab); }
-.recent-tag.media { background: var(--c-media); }
-.recent-name {
-  font-size: 13px;
-  font-weight: 500;
-}
-.recent-row:hover .recent-name {
-  color: var(--mets-orange);
-}
-.recent-empty {
-  font-size: 12px;
-  color: var(--text-muted);
-  text-align: center;
-  padding: 16px 8px;
-  line-height: 1.5;
-}
-.recent-empty .hint {
-  font-size: 11px;
-  color: var(--text-light);
-  margin-top: 6px;
 }

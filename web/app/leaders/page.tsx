@@ -51,13 +51,18 @@ export default async function LeadersPage({
   const latest = seasons[0]?.season;
   const season = sp.season ? Number(sp.season) : latest;
 
+  // mirror the 10 career presets 1:1 so the two rows align
   const seasonPresets: Preset[] = latest
     ? [
-        { key: "s_hr", label: "HR", scope: "season", type: "batting", stat: "home_runs" },
-        { key: "s_avg", label: "AVG", scope: "season", type: "batting", stat: "avg" },
+        { key: "s_hr", label: "Home Runs", scope: "season", type: "batting", stat: "home_runs" },
+        { key: "s_hits", label: "Hits", scope: "season", type: "batting", stat: "hits" },
         { key: "s_rbi", label: "RBI", scope: "season", type: "batting", stat: "rbi" },
+        { key: "s_runs", label: "Runs", scope: "season", type: "batting", stat: "runs" },
+        { key: "s_sb", label: "Stolen Bases", scope: "season", type: "batting", stat: "stolen_bases" },
+        { key: "s_avg", label: "AVG", scope: "season", type: "batting", stat: "avg" },
         { key: "s_w", label: "Wins", scope: "season", type: "pitching", stat: "wins" },
         { key: "s_so", label: "Strikeouts", scope: "season", type: "pitching", stat: "strike_outs" },
+        { key: "s_sv", label: "Saves", scope: "season", type: "pitching", stat: "saves" },
         { key: "s_era", label: "ERA", scope: "season", type: "pitching", stat: "era" },
       ]
     : [];
@@ -66,9 +71,20 @@ export default async function LeadersPage({
   const isActive = (p: Preset) =>
     p.scope === scope && p.type === type && p.stat === stat;
 
-  // Inline bars for counting stats (rate stats like AVG/ERA don't get bars).
-  const isCounting = !["avg", "slg", "era", "whip"].includes(stat);
-  const maxVal = Math.max(1, ...rows.map((r) => Number(r.value) || 0));
+  // Directional inline bars: the leader is always fullest. Counting & rate
+  // stats where higher = better scale by value/max; for "lower is better" stats
+  // (ERA/WHIP) we invert (min/value) so the best — not the worst — bar is longest.
+  const lowerBetter = ["era", "whip"].includes(stat);
+  const vals = rows.map((r) => Number(r.value)).filter((v) => Number.isFinite(v));
+  // NOTE: don't floor at 1 — rate stats (AVG/ERA ~0.3–4) would be squashed.
+  const maxVal = vals.length ? Math.max(...vals) : 1;
+  const positives = vals.filter((v) => v > 0);
+  const minVal = positives.length ? Math.min(...positives) : 0;
+  const barPct = (v: number) => {
+    if (!Number.isFinite(v) || v <= 0 || maxVal <= 0) return 0;
+    const pct = lowerBetter ? (minVal / v) * 100 : (v / maxVal) * 100;
+    return Math.max(4, Math.min(100, pct));
+  };
 
   const chip = (p: Preset) => (
     <Link
@@ -88,13 +104,22 @@ export default async function LeadersPage({
         career boards cached as materialized views.
       </p>
 
-      <div className="le-group">Career</div>
-      <div className="le-presets">{CAREER_PRESETS.map(chip)}</div>
+      <div className={`le-group ${scope === "career" ? "on" : ""}`}>
+        Career {scope === "career" && <span className="le-viewing">viewing</span>}
+      </div>
+      <div className={`le-presets ${scope === "career" ? "" : "dim"}`}>
+        {CAREER_PRESETS.map(chip)}
+      </div>
 
       {latest && (
         <>
-          <div className="le-group">Season — {season}</div>
-          <div className="le-presets">{seasonPresets.map(chip)}</div>
+          <div className={`le-group ${scope === "season" ? "on" : ""}`}>
+            Season — {season}{" "}
+            {scope === "season" && <span className="le-viewing">viewing</span>}
+          </div>
+          <div className={`le-presets ${scope === "season" ? "" : "dim"}`}>
+            {seasonPresets.map(chip)}
+          </div>
         </>
       )}
 
@@ -136,16 +161,12 @@ export default async function LeadersPage({
                   <td className="le-pos">{r.primary_position ?? "—"}</td>
                   <td>
                     <div className="le-valwrap">
-                      {isCounting && (
-                        <div className="le-track">
-                          <div
-                            className="le-bar"
-                            style={{
-                              width: `${(Number(r.value) / maxVal) * 100}%`,
-                            }}
-                          />
-                        </div>
-                      )}
+                      <div className="le-track">
+                        <div
+                          className={`le-bar ${lowerBetter ? "rate" : ""}`}
+                          style={{ width: `${barPct(Number(r.value))}%` }}
+                        />
+                      </div>
                       <span className="le-num">{r.value}</span>
                     </div>
                   </td>

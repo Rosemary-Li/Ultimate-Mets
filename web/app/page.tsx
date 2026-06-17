@@ -12,7 +12,6 @@ import {
 } from "@/lib/db";
 import { headshot, teamLogo } from "@/lib/images";
 import type { Game } from "@/lib/types";
-import RecentlyViewed from "@/components/RecentlyViewed";
 import ChartView from "@/components/ChartView";
 
 export const dynamic = "force-dynamic";
@@ -98,6 +97,13 @@ export default async function HomePage() {
                 </div>
               ))}
             </div>
+            <p className="hm-stats-note">
+              Complete franchise record
+              {stats?.first_season && stats?.last_season
+                ? ` · ${stats.first_season}–${stats.last_season}`
+                : ""}{" "}
+              · games &amp; players reflect completed regular-season play
+            </p>
           </div>
           <div className="hm-faces">
             {hrLeaders.map((l) => (
@@ -163,18 +169,23 @@ export default async function HomePage() {
                 <Link href="/leaders">All leaders →</Link>
               </div>
               <div className="hm-leaders">
-                {hrLeaders.map((l, i) => (
-                  <Link key={l.player_id} href={`/players/${l.player_id}`} className="hm-leader">
-                    <span className="hm-rank">{i + 1}</span>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={headshot(l.player_id)} alt={l.full_name ?? ""} className="hm-face-sm" />
-                    <span className="hm-leader-name">{l.full_name}</span>
-                    <span className="hm-leader-bar">
-                      <span style={{ width: `${(Number(l.value) / maxHr) * 100}%` }} />
-                    </span>
-                    <span className="hm-leader-val">{l.value}</span>
-                  </Link>
-                ))}
+                {hrLeaders.map((l, i) => {
+                  const pct = Math.max(2, (Number(l.value) / maxHr) * 100);
+                  return (
+                    <Link key={l.player_id} href={`/players/${l.player_id}`} className="hm-leader">
+                      <span className="hm-rank">{i + 1}</span>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={headshot(l.player_id)} alt={l.full_name ?? ""} className="hm-face-sm" />
+                      <span className="hm-leader-name">{l.full_name}</span>
+                      <span className="hm-leader-bar">
+                        {/* gradient is sized to the full track so the orange
+                            endpoint position maps to the absolute HR value */}
+                        <span style={{ width: `${pct}%`, backgroundSize: `${(10000 / pct).toFixed(1)}% 100%` }} />
+                      </span>
+                      <span className="hm-leader-val">{l.value}</span>
+                    </Link>
+                  );
+                })}
               </div>
             </section>
           )}
@@ -231,8 +242,6 @@ export default async function HomePage() {
               ))}
             </section>
           )}
-
-          <RecentlyViewed />
         </aside>
       </main>
     </>

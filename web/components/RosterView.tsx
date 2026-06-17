@@ -31,6 +31,16 @@ function groupOf(pt: string | null): Group {
   }
 }
 
+/** Which stat line a group shows — pitchers get rate/counting pitching stats. */
+const isPitchers = (g: Group) => g === "Pitchers";
+
+/** Legend shown in a group header: clarifies period (career) + which 3 stats. */
+function groupLegend(g: Group): string {
+  return isPitchers(g)
+    ? "Career · ERA · W–L · SO"
+    : "Career · AVG · HR · RBI";
+}
+
 const num = (v: unknown): number | null => {
   if (v === null || v === undefined || v === "") return null;
   const n = Number(v);
@@ -80,10 +90,10 @@ function Avatar({ p }: { p: PlayerRow }) {
   );
 }
 
-/* ---------- stat line ---------- */
+/* ---------- stat line (position-aware: pitchers vs hitters) ---------- */
 
 function StatLine({ p }: { p: PlayerRow }) {
-  if (groupOf(p.position_type) === "Pitchers") {
+  if (isPitchers(groupOf(p.position_type))) {
     const w = num(p.wins);
     const l = num(p.losses);
     return (
@@ -103,27 +113,57 @@ function StatLine({ p }: { p: PlayerRow }) {
   );
 }
 
-/* ---------- main ---------- */
+/* ---------- sorting ---------- */
 
 type Status = "current" | "all" | "historical";
 type Pos = "all" | Group;
-type Sort = "name" | "hr" | "avg" | "era" | "so" | "wins";
+type Sort = "name" | "hr" | "rbi" | "avg" | "era" | "so" | "wins";
+type Dir = "asc" | "desc";
 
 const SORTS: { key: Sort; label: string }[] = [
   { key: "name", label: "Name" },
   { key: "hr", label: "Home Runs" },
+  { key: "rbi", label: "RBI" },
   { key: "avg", label: "Batting Avg" },
-  { key: "era", label: "ERA" },
+  { key: "era", label: "ERA (P)" },
   { key: "so", label: "Strikeouts (P)" },
-  { key: "wins", label: "Wins" },
+  { key: "wins", label: "Wins (P)" },
 ];
+
+// ascending comparators; direction is applied on top
+const ASC: Record<Sort, (a: PlayerRow, b: PlayerRow) => number> = {
+  name: (a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? ""),
+  hr: (a, b) => (num(a.bat_hr) ?? -1) - (num(b.bat_hr) ?? -1),
+  rbi: (a, b) => (num(a.bat_rbi) ?? -1) - (num(b.bat_rbi) ?? -1),
+  avg: (a, b) => (num(a.bat_avg) ?? -1) - (num(b.bat_avg) ?? -1),
+  era: (a, b) => (num(a.era) ?? 1e9) - (num(b.era) ?? 1e9),
+  so: (a, b) => (num(a.pit_so) ?? -1) - (num(b.pit_so) ?? -1),
+  wins: (a, b) => (num(a.wins) ?? -1) - (num(b.wins) ?? -1),
+};
+
+// sensible default direction when a sort key is first chosen
+const defaultDir = (k: Sort): Dir => (k === "name" || k === "era" ? "asc" : "desc");
+
+/* ---------- main ---------- */
 
 export default function RosterView({ players }: { players: PlayerRow[] }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<Status>("current");
   const [pos, setPos] = useState<Pos>("all");
   const [sort, setSort] = useState<Sort>("name");
+  const [dir, setDir] = useState<Dir>("asc");
   const [view, setView] = useState<"card" | "list">("card");
+
+  // pick a sort key (dropdown / first header click) — resets to its default dir
+  const pickSort = (k: Sort) => {
+    setSort(k);
+    setDir(defaultDir(k));
+  };
+  // header click — same column flips direction, new column resets
+  const toggleSort = (k: Sort) => {
+    if (k === sort) setDir((d) => (d === "asc" ? "desc" : "asc"));
+    else pickSort(k);
+  };
 
   // status + search scope (drives the summary counts)
   const scoped = useMemo(() => {
@@ -149,20 +189,13 @@ export default function RosterView({ players }: { players: PlayerRow[] }) {
   const filtered = useMemo(() => {
     let list = scoped;
     if (pos !== "all") list = list.filter((p) => groupOf(p.position_type) === pos);
+    const cmp = ASC[sort];
+    const signed = dir === "asc" ? cmp : (a: PlayerRow, b: PlayerRow) => -cmp(a, b);
+    return [...list].sort(signed);
+  }, [scoped, pos, sort, dir]);
 
-    const cmp: Record<Sort, (a: PlayerRow, b: PlayerRow) => number> = {
-      name: (a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? ""),
-      hr: (a, b) => (num(b.bat_hr) ?? -1) - (num(a.bat_hr) ?? -1),
-      avg: (a, b) => (num(b.bat_avg) ?? -1) - (num(a.bat_avg) ?? -1),
-      era: (a, b) => (num(a.era) ?? 1e9) - (num(b.era) ?? 1e9),
-      so: (a, b) => (num(b.pit_so) ?? -1) - (num(a.pit_so) ?? -1),
-      wins: (a, b) => (num(b.wins) ?? -1) - (num(a.wins) ?? -1),
-    };
-    return [...list].sort(cmp[sort]);
-  }, [scoped, pos, sort]);
-
-  // group for card view (skip grouping when a sort other than name is chosen,
-  // so a "most HR" sort reads as one ranked list)
+  // group for card view (only when sorting by name — a stat sort reads as one
+  // ranked list across positions)
   const grouped = useMemo(() => {
     if (sort !== "name") return null;
     const g: Record<string, PlayerRow[]> = {};
@@ -182,8 +215,9 @@ export default function RosterView({ players }: { players: PlayerRow[] }) {
     <div className="pl-wrap">
       <h1 className="pl-page-title">Players</h1>
       <p className="pl-page-sub">
-        Searchable roster database — every Met with career stats, pulled from MLB
-        and updated daily.
+        Searchable roster database — stat lines show{" "}
+        <strong>career totals with the Mets</strong>, pulled from MLB and updated
+        daily.
       </p>
 
       {/* summary strip */}
@@ -228,7 +262,7 @@ export default function RosterView({ players }: { players: PlayerRow[] }) {
 
         <label className="pl-sort">
           Sort
-          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+          <select value={sort} onChange={(e) => pickSort(e.target.value as Sort)}>
             {SORTS.map((s) => (
               <option key={s.key} value={s.key}>
                 {s.label}
@@ -258,12 +292,15 @@ export default function RosterView({ players }: { players: PlayerRow[] }) {
       {filtered.length === 0 ? (
         <div className="pl-empty">No players match these filters.</div>
       ) : view === "list" ? (
-        <ListView rows={filtered} sort={sort} setSort={setSort} />
+        <ListView rows={filtered} sort={sort} dir={dir} onSort={toggleSort} />
       ) : grouped ? (
         GROUP_ORDER.filter((g) => grouped[g]?.length).map((g) => (
           <section key={g}>
             <h2 className="pl-group-title">
-              {g} <span className="pl-count">{grouped[g].length}</span>
+              <span>
+                {g} <span className="pl-count">{grouped[g].length}</span>
+              </span>
+              <span className="pl-group-legend">{groupLegend(g as Group)}</span>
             </h2>
             <CardGrid rows={grouped[g]} />
           </section>
@@ -271,7 +308,12 @@ export default function RosterView({ players }: { players: PlayerRow[] }) {
       ) : (
         <>
           <h2 className="pl-group-title">
-            Ranked <span className="pl-count">{filtered.length}</span>
+            <span>
+              Ranked <span className="pl-count">{filtered.length}</span>
+            </span>
+            <span className="pl-group-legend">
+              Career totals · hitters AVG·HR·RBI, pitchers ERA·W–L·SO
+            </span>
           </h2>
           <CardGrid rows={filtered} />
         </>
@@ -310,63 +352,72 @@ function CardGrid({ rows }: { rows: PlayerRow[] }) {
 function ListView({
   rows,
   sort,
-  setSort,
+  dir,
+  onSort,
 }: {
   rows: PlayerRow[];
   sort: Sort;
-  setSort: (s: Sort) => void;
+  dir: Dir;
+  onSort: (s: Sort) => void;
 }) {
+  const arrow = (s: Sort) => (sort === s ? (dir === "asc" ? " ▲" : " ▼") : "");
   const Th = ({ s, children }: { s?: Sort; children: React.ReactNode }) => (
     <th
       className={s ? `pl-th-sort ${sort === s ? "active" : ""}` : ""}
-      onClick={s ? () => setSort(s) : undefined}
+      onClick={s ? () => onSort(s) : undefined}
     >
       {children}
+      {s && <span className="pl-th-arrow">{arrow(s)}</span>}
     </th>
   );
   return (
-    <div className="pl-list-wrap">
-      <table className="pl-list">
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th>Pos</th>
-            <th>#</th>
-            <th>B/T</th>
-            <Th s="avg">AVG</Th>
-            <Th s="hr">HR</Th>
-            <th>RBI</th>
-            <Th s="era">ERA</Th>
-            <Th s="wins">W-L</Th>
-            <Th s="so">SO</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((p) => {
-            const w = num(p.wins);
-            const l = num(p.losses);
-            return (
-              <tr key={p.player_id}>
-                <td className="pl-list-name">
-                  <Link href={`/players/${p.player_id}`}>
-                    {p.full_name}
-                    {p.is_current && <span className="pl-dot" />}
-                  </Link>
-                </td>
-                <td>{p.primary_position ?? "—"}</td>
-                <td>{p.primary_number ?? "—"}</td>
-                <td>{batThrow(p) || "—"}</td>
-                <td>{fmtAvg(p.bat_avg)}</td>
-                <td>{num(p.bat_hr) ?? "—"}</td>
-                <td>{num(p.bat_rbi) ?? "—"}</td>
-                <td>{p.era ?? "—"}</td>
-                <td>{w === null && l === null ? "—" : `${w ?? 0}-${l ?? 0}`}</td>
-                <td>{num(p.pit_so) ?? "—"}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <div className="pl-list-caption">
+        Career totals with the Mets — click a column header to sort.
+      </div>
+      <div className="pl-list-wrap">
+        <table className="pl-list">
+          <thead>
+            <tr>
+              <Th s="name">Player</Th>
+              <th>Pos</th>
+              <th>#</th>
+              <th>B/T</th>
+              <Th s="avg">AVG</Th>
+              <Th s="hr">HR</Th>
+              <Th s="rbi">RBI</Th>
+              <Th s="era">ERA</Th>
+              <Th s="wins">W-L</Th>
+              <Th s="so">SO</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((p) => {
+              const w = num(p.wins);
+              const l = num(p.losses);
+              return (
+                <tr key={p.player_id}>
+                  <td className="pl-list-name">
+                    <Link href={`/players/${p.player_id}`}>
+                      {p.full_name}
+                      {p.is_current && <span className="pl-dot" />}
+                    </Link>
+                  </td>
+                  <td>{p.primary_position ?? "—"}</td>
+                  <td>{p.primary_number ?? "—"}</td>
+                  <td>{batThrow(p) || "—"}</td>
+                  <td>{fmtAvg(p.bat_avg)}</td>
+                  <td>{num(p.bat_hr) ?? "—"}</td>
+                  <td>{num(p.bat_rbi) ?? "—"}</td>
+                  <td>{p.era ?? "—"}</td>
+                  <td>{w === null && l === null ? "—" : `${w ?? 0}-${l ?? 0}`}</td>
+                  <td>{num(p.pit_so) ?? "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
