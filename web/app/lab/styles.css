@@ -71,6 +71,13 @@
   padding: 30px 0;
 }
 
+.route-lab .lab-chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin: 8px 0 16px;
+}
 .route-lab .lab-table-wrap {
   overflow-x: auto;
   margin: 8px 0 32px;

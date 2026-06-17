@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CareerBatting } from "@/lib/db";
 import type { Player } from "@/lib/types";
+import ChartView from "@/components/ChartView";
 
 const ROWS: { key: keyof CareerBatting; label: string; rate?: boolean }[] = [
   { key: "seasons", label: "Seasons" },
@@ -108,6 +109,25 @@ export default function LabPage() {
           Search and add players above to build a comparison.
         </div>
       ) : (
+        <>
+        <div className="lab-chart-card">
+          <ChartView
+            type="bar"
+            height={260}
+            labels={["HR", "RBI", "Hits", "SB", "BB", "2B"]}
+            datasets={players.map((p) => ({
+              label: p.full_name ?? "",
+              data: [
+                p.home_runs,
+                p.rbi,
+                p.hits,
+                p.stolen_bases,
+                p.walks,
+                p.doubles,
+              ],
+            }))}
+          />
+        </div>
         <div className="lab-table-wrap">
           <table className="lab-table">
             <thead>
@@ -148,6 +168,7 @@ export default function LabPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );

@@ -99,6 +99,31 @@
   text-align: right;
   color: var(--mets-blue);
 }
+.route-leaders .le-valwrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.route-leaders .le-track {
+  width: 120px;
+  height: 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.route-leaders .le-bar {
+  height: 100%;
+  background: var(--mets-orange);
+  border-radius: 4px;
+}
+.route-leaders .le-num {
+  min-width: 46px;
+  text-align: right;
+  font-family: var(--num-font);
+  font-weight: 700;
+  color: var(--mets-blue);
+}
 .route-leaders .le-pos {
   font-family: var(--num-font);
   color: var(--text-muted);

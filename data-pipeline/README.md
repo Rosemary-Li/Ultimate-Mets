@@ -8,22 +8,26 @@ Data source is the MLB Stats API only (free, no key). Baseball-Reference is neve
 
 ## Files
 
+### SQL
 | File | Purpose |
 |---|---|
-| `schema.sql` | DDL — auto-data tables: `games`, `players`, `batting_stats`, `pitching_stats`. |
-| `views.sql` | Aggregation **views** (season/career totals, site counts). Derived, not stored. |
+| `schema.sql` | Auto-data tables: `games`, `players`, `batting_stats`, `pitching_stats`, `team_season`, `game_linescore`. |
+| `schema_editorial.sql` | Human-curated tables: `today_in_history`, `trending`, `media_items`. |
+| `views.sql` | Aggregation **views** + materialized leaderboards (career/season totals, leaders, site counts, postseason series, player directory). |
 | `roles.sql` | DB roles + privilege isolation (run once as superuser). |
-| `ingest_games.py` | Game-level rows from `/schedule` (Mets, team id 121). |
-| `ingest_boxscores.py` | Per-game batting/pitching from `/game/{pk}/boxscore`. |
-| `ingest_players.py` | Player bios from rosters + `/people`. |
-| `run_daily.sh` | Runs all loaders in dependency order, then refreshes materialized views. |
-| `_common.py` | Shared API-fetch + Postgres-connect helpers. |
-| `requirements.txt` | `psycopg2-binary`. |
 
-## Connection
-
-All scripts read the connection from `DATABASE_URL` (a libpq connection string) or the
-`--dsn` flag. Local default: `postgresql://localhost:5432/ultimate_mets`.
+### Ingest scripts (Python)
+| Script | Source → table |
+|---|---|
+| `ingest_games.py` | `/schedule` → `games` (incl. postseason series fields) |
+| `ingest_boxscores.py` | `/game/{pk}/boxscore` → `batting_stats`, `pitching_stats` |
+| `ingest_linescores.py` | `/game/{pk}/linescore` → `game_linescore` |
+| `ingest_players.py` | rosters + `/people` → `players` |
+| `ingest_standings.py` | `/standings` → `team_season` |
+| `seed_editorial.py` | seed data → editorial tables (manual / occasional) |
+| `_common.py` | shared API-fetch + Postgres-connect helpers |
+| `run_daily.sh` | runs all stat loaders in order, then refreshes materialized views |
+| `Dockerfile` | container for a Cloud Run Job (see ../DEPLOY.md) |
 
 ## 1. Set up Postgres
 
@@ -33,74 +37,66 @@ createdb ultimate_mets
 export DATABASE_URL=postgresql://localhost:5432/ultimate_mets
 
 pip install -r requirements.txt
-psql "$DATABASE_URL" -f schema.sql      # create tables
-psql "$DATABASE_URL" -f views.sql       # create aggregation views
+psql "$DATABASE_URL" -f schema.sql
+psql "$DATABASE_URL" -f schema_editorial.sql
+psql "$DATABASE_URL" -f views.sql
 ```
 
-## 2. Ingest (run in this order — boxscores depend on games)
+## 2. Ingest (order matters — boxscores/linescores depend on games)
 
 ```bash
-python3 ingest_games.py                              # last 3 days (default)
-python3 ingest_games.py     --start 2024-03-28 --end 2024-09-30
-python3 ingest_boxscores.py --season 2024            # batting/pitching for finished games
-python3 ingest_players.py   --start-season 2015 --end-season 2025
+# Backfill seasons (adjust the range). Spring-training games are ingested but
+# excluded from all stats by the views (they filter game_type = 'R').
+python3 ingest_games.py     --start 2024-03-01 --end 2026-06-16
+python3 ingest_boxscores.py --season 2024 && python3 ingest_boxscores.py --season 2025 && python3 ingest_boxscores.py --season 2026
+python3 ingest_linescores.py --season 2026
+python3 ingest_standings.py --start-season 2015 --end-season 2026
+python3 ingest_players.py   --start-season 2024 --end-season 2026
+python3 seed_editorial.py                                 # editorial content (one-time)
 
-# Inspect
-psql "$DATABASE_URL" -c "SELECT * FROM v_site_stats;"
-psql "$DATABASE_URL" -c "SELECT pl.full_name, b.season, b.home_runs, b.avg
-  FROM v_player_season_batting b JOIN players pl USING (player_id)
-  ORDER BY b.home_runs DESC LIMIT 10;"
+# Refresh the leaderboard caches
+psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW mv_career_batting_leaders; REFRESH MATERIALIZED VIEW mv_career_pitching_leaders;"
 ```
 
 Every loader is idempotent — re-running or backfilling never creates duplicate rows.
-`ingest_games` and `ingest_boxscores` backfill the last 3 days by default, which
-absorbs double-headers, postponements, and post-game stat corrections.
 
 ## 3. Daily run + scheduling
 
-`run_daily.sh` runs all stages in order:
+`run_daily.sh` runs games → boxscores → linescores → players → standings, then refreshes
+the materialized views:
 
 ```bash
 DATABASE_URL=postgresql://localhost:5432/ultimate_mets ./run_daily.sh
 ```
 
-Schedule it once a day at 3 AM Eastern (after West Coast night games finish):
+Cron (3 AM Eastern, after West Coast night games finish):
 
 ```cron
-0 3 * * * cd "/Users/rosemary/Desktop/Ultimate Mets/Ultimate Mets/data-pipeline" && DATABASE_URL=postgresql://localhost:5432/ultimate_mets ./run_daily.sh >> ingest.log 2>&1
+0 3 * * * cd ".../data-pipeline" && DATABASE_URL=postgresql://localhost:5432/ultimate_mets ./run_daily.sh >> ingest.log 2>&1
 ```
 
-cron uses your machine's local timezone.
+(`seed_editorial.py` is NOT part of the daily run — editorial content is curated by hand.)
 
 ## 4. Design
 
-- **Single source of truth.** `views.sql` computes season/career totals, rate stats
-  (AVG/OBP/SLG, ERA/WHIP), and the home-page counts (`v_site_stats`) from the raw
-  per-game tables. Nothing aggregated is stored.
-  - Innings are stored two ways: `innings_pitched` text (`'5.2'`, as MLB returns it)
-    and `outs` integer (17), so ERA/WHIP sum correctly. Season IP is re-rendered in
-    baseball notation (`'12.1'` = 12⅓).
-- **Materialized views for heavy leaderboards.** When an all-time leaderboard gets slow,
-  promote it to a `MATERIALIZED VIEW` and `REFRESH` it at the end of `run_daily.sh`.
-  See the template at the bottom of `views.sql`. It's a performance cache, not a second
-  source of truth.
-- **Privilege isolation (`roles.sql`).** Run once as a superuser after editing the
-  passwords. Creates:
-  - `mets_pipeline` — write only on auto-data tables (games/players/batting/pitching/standings).
-  - `mets_web` — read-only on everything.
-  - `mets_editor` — owns editorial tables; the pipeline role is never granted on them,
-    so an automated run cannot overwrite human-entered content.
+- **Single source of truth.** `views.sql` derives all season/career totals, rate stats
+  (AVG/OBP/SLG, ERA/WHIP), site counts, postseason series, and the player directory
+  from the raw per-game tables. Nothing aggregated is stored.
+  - Innings are stored as text (`'5.2'`) and as `outs` (17) so ERA/WHIP sum correctly;
+    season IP is re-rendered in baseball notation.
+  - All user-facing stats filter `game_type = 'R'` (spring training stays out).
+- **Materialized leaderboards.** `mv_career_*_leaders` cache career totals for fast
+  leaderboards; `run_daily.sh` refreshes them after each load. A performance cache, not
+  a second source of truth.
+- **Privilege isolation (`roles.sql`).** `mets_pipeline` writes only the auto-data
+  tables; `mets_web` is read-only; `mets_editor` owns the editorial tables. The pipeline
+  role is never granted on editorial tables, so an automated run can't overwrite
+  human-entered content — enforced by Postgres, not convention.
+- **"Today in History" auto skeleton.** The home page combines hand-written blurbs
+  (`today_in_history`) with game results derived live from the `games` table for the
+  current date — so the event skeleton is automatic, only the prose is manual.
 
-## 5. Going to the cloud
+## 5. Cloud
 
-The scripts don't change — point `DATABASE_URL` at the managed Postgres (RDS, Cloud SQL,
-Neon, Supabase, …) and swap the cron trigger for the server's cron / GitHub Actions /
-a cloud scheduler. Use `psycopg2` (compiled against libpq) instead of `psycopg2-binary`
-in production if you prefer.
-
-## 6. Next extension
-
-Standings (`/standings`) for season pages, then leaderboards as materialized views, then
-postseason. Editorial tables (media, today_in_history, trending) get their own schema
-and stay outside the pipeline's write scope. "Today in History" can auto-generate its
-event skeleton from the `games` table, with humans adding only the narrative text.
+Point `DATABASE_URL` at managed Postgres (Cloud SQL/RDS/Neon/…) and run the pipeline as
+a Cloud Run Job on a Cloud Scheduler trigger. See [../DEPLOY.md](../DEPLOY.md).

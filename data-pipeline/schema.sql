@@ -27,12 +27,14 @@ CREATE TABLE IF NOT EXISTS games (
     mets_is_home   SMALLINT,              -- 0/1 convenience flag (Mets teamId = 121)
     series_description TEXT,              -- e.g. 'NL Wild Card Series' (postseason)
     series_game_number INTEGER,          -- game # within the series
+    attendance     INTEGER,              -- from gameInfo (null for very old games)
     updated_at     TIMESTAMPTZ DEFAULT now()
 );
 
 -- For databases created before these columns existed:
 ALTER TABLE games ADD COLUMN IF NOT EXISTS series_description TEXT;
 ALTER TABLE games ADD COLUMN IF NOT EXISTS series_game_number INTEGER;
+ALTER TABLE games ADD COLUMN IF NOT EXISTS attendance INTEGER;
 
 CREATE INDEX IF NOT EXISTS idx_games_official_date ON games (official_date);
 CREATE INDEX IF NOT EXISTS idx_games_season        ON games (season);

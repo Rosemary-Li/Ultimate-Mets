@@ -6,6 +6,7 @@ import {
   getSiteStats,
   getMediaCount,
   getTrending,
+  getAutoTrending,
   getTodayEditorial,
   getGameAnniversaries,
 } from "@/lib/db";
@@ -140,7 +141,8 @@ export default async function HomePage() {
     month: "long",
     day: "numeric",
   });
-  const [trendingDb, editorial, anniversaries] = await Promise.all([
+  const [autoTrending, trendingDb, editorial, anniversaries] = await Promise.all([
+    getAutoTrending(),
     getTrending(),
     getTodayEditorial(month, day),
     getGameAnniversaries(month, day),
@@ -166,13 +168,18 @@ export default async function HomePage() {
   ]
     .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
     .slice(0, 8);
-  const trendingList = trendingDb.length
-    ? trendingDb.map((t) => ({
-        name: t.title ?? "",
-        meta: t.subtitle ?? "",
-        href: t.href ?? "#",
-      }))
-    : TRENDING;
+  // Prefer auto-derived trending (real data); fall back to the editorial table,
+  // then the static seed.
+  const trendingList =
+    autoTrending.length > 0
+      ? autoTrending.map((t) => ({ name: t.title, meta: t.subtitle, href: t.href }))
+      : trendingDb.length
+        ? trendingDb.map((t) => ({
+            name: t.title ?? "",
+            meta: t.subtitle ?? "",
+            href: t.href ?? "#",
+          }))
+        : TRENDING;
 
   return (
     <>

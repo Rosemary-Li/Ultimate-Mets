@@ -6,6 +6,7 @@ import {
   getPlayerSeasonPitching,
 } from "@/lib/db";
 import type { SeasonBatting, SeasonPitching } from "@/lib/types";
+import ChartView from "@/components/ChartView";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,38 @@ export default async function PlayerProfilePage({
         <Link href="/players" className="pl-back">
           ← All players
         </Link>
+
+        {batting.length > 0 && (
+          <>
+            <h2 className="pl-section-title">Career arc — HR &amp; RBI by season</h2>
+            <div className="pl-chart-card">
+              <ChartView
+                type="bar"
+                labels={batting.map((b) => b.season)}
+                datasets={[
+                  { label: "HR", data: batting.map((b) => b.home_runs) },
+                  { label: "RBI", data: batting.map((b) => b.rbi), color: "#FF5910" },
+                ]}
+              />
+            </div>
+          </>
+        )}
+
+        {batting.length === 0 && pitching.length > 0 && (
+          <>
+            <h2 className="pl-section-title">Career arc — Wins &amp; Strikeouts by season</h2>
+            <div className="pl-chart-card">
+              <ChartView
+                type="bar"
+                labels={pitching.map((p) => p.season)}
+                datasets={[
+                  { label: "Wins", data: pitching.map((p) => p.wins) },
+                  { label: "SO", data: pitching.map((p) => p.strike_outs), color: "#FF5910" },
+                ]}
+              />
+            </div>
+          </>
+        )}
 
         {batting.length > 0 && (
           <>

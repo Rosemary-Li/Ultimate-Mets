@@ -117,14 +117,15 @@ GROUP BY p.player_id;
 -- ---- Site-wide counts for the home hero (computed, regular + postseason) ----
 CREATE OR REPLACE VIEW v_site_stats AS
 SELECT
-    (SELECT COUNT(DISTINCT season) FROM games WHERE game_type = 'R')   AS seasons,
+    -- franchise seasons come from team_season (full history via standings)
+    (SELECT COUNT(*) FROM team_season)                                 AS seasons,
     (SELECT COUNT(*) FROM players)                                     AS players,
     (SELECT COUNT(*) FROM games
        WHERE game_type = 'R' AND status_code = 'F')                    AS games,
     (SELECT COUNT(DISTINCT season) FROM games
        WHERE game_type IN ('F','D','L','W'))                           AS postseasons,
-    (SELECT MIN(season) FROM games WHERE game_type = 'R')              AS first_season,
-    (SELECT MAX(season) FROM games WHERE game_type = 'R')              AS last_season;
+    (SELECT MIN(season) FROM team_season)                              AS first_season,
+    (SELECT MAX(season) FROM team_season)                              AS last_season;
 
 -- ---- Postseason series (grouped from postseason games) ----
 -- One row per (season, round). game_type maps to the round; round_order sorts them.

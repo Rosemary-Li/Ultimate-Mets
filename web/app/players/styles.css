@@ -151,6 +151,12 @@
   font-weight: 700;
   margin: 24px 0 10px;
 }
+.route-players .pl-chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
 .route-players .pl-table-wrap {
   overflow-x: auto;
 }

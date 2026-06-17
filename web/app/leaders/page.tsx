@@ -65,6 +65,10 @@ export default async function LeadersPage({
   const isActive = (p: Preset) =>
     p.scope === scope && p.type === type && p.stat === stat;
 
+  // Inline bars for counting stats (rate stats like AVG/ERA don't get bars).
+  const isCounting = !["avg", "slg", "era", "whip"].includes(stat);
+  const maxVal = Math.max(1, ...rows.map((r) => Number(r.value) || 0));
+
   const chip = (p: Preset) => (
     <Link
       key={p.key}
@@ -120,7 +124,21 @@ export default async function LeadersPage({
                     <Link href={`/players/${r.player_id}`}>{r.full_name}</Link>
                   </td>
                   <td className="le-pos">{r.primary_position ?? "—"}</td>
-                  <td className="le-val">{r.value}</td>
+                  <td>
+                    <div className="le-valwrap">
+                      {isCounting && (
+                        <div className="le-track">
+                          <div
+                            className="le-bar"
+                            style={{
+                              width: `${(Number(r.value) / maxVal) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      )}
+                      <span className="le-num">{r.value}</span>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

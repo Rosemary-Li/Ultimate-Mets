@@ -152,9 +152,45 @@ export async function getPlayerSeasonPitching(
 
 // ---------------------------------------------------------------- seasons
 
-/** All Mets seasons in the DB, newest first. */
+/** All Mets seasons in the DB, newest first, with home regular-season attendance. */
 export async function getSeasons(): Promise<TeamSeason[]> {
-  return query<TeamSeason>(`SELECT * FROM team_season ORDER BY season DESC`);
+  return query<TeamSeason>(`
+    SELECT ts.*, att.home_attendance
+    FROM team_season ts
+    LEFT JOIN (
+      SELECT season, SUM(attendance) AS home_attendance
+      FROM games
+      WHERE mets_is_home = 1 AND game_type = 'R' AND status_code = 'F'
+      GROUP BY season
+    ) att ON att.season = ts.season
+    ORDER BY ts.season DESC
+  `);
+}
+
+export interface FranchiseSummary {
+  wins: number;
+  losses: number;
+  appearances: number;
+  pennants: number;
+  ws_titles: number;
+  first_season: number | null;
+  last_season: number | null;
+}
+
+/** Team-history header totals (à la a franchise encyclopedia). */
+export async function getFranchiseSummary(): Promise<FranchiseSummary | null> {
+  const rows = await query<FranchiseSummary>(`
+    SELECT
+      (SELECT COALESCE(SUM(wins), 0)   FROM team_season)                              AS wins,
+      (SELECT COALESCE(SUM(losses), 0) FROM team_season)                              AS losses,
+      (SELECT COUNT(DISTINCT season)   FROM v_postseason_series)                      AS appearances,
+      (SELECT COUNT(DISTINCT season)   FROM v_postseason_series WHERE game_type='W')  AS pennants,
+      (SELECT COUNT(DISTINCT season)   FROM v_postseason_series
+         WHERE game_type='W' AND mets_wins > mets_losses)                            AS ws_titles,
+      (SELECT MIN(season) FROM team_season) AS first_season,
+      (SELECT MAX(season) FROM team_season) AS last_season
+  `);
+  return rows[0] ?? null;
 }
 
 /** A single season's standings line, or null. */
@@ -273,6 +309,104 @@ export async function getLeaders(opts: {
 
 export async function getTrending(): Promise<Trending[]> {
   return query<Trending>(`SELECT * FROM trending ORDER BY position`);
+}
+
+export interface TrendingItem {
+  title: string;
+  subtitle: string;
+  href: string;
+}
+
+/**
+ * Auto-derived "Trending" from real data — updates itself as the DB changes.
+ * (There's no real social/traffic signal, so this approximates "what's notable
+ * right now" from recent results + current/career leaders.)
+ */
+export async function getAutoTrending(): Promise<TrendingItem[]> {
+  const items: TrendingItem[] = [];
+  const seen = new Set<number>();
+
+  // most recent final game
+  const lg = await query<Game>(
+    `SELECT * FROM games WHERE status_code='F' AND game_type NOT IN ('S','E','A')
+     ORDER BY official_date DESC, game_number DESC LIMIT 1`,
+  );
+  if (lg[0]) {
+    const g = lg[0];
+    const home = g.mets_is_home === 1;
+    const ms = home ? g.home_score : g.away_score;
+    const os = home ? g.away_score : g.home_score;
+    const opp = home ? g.away_team_name : g.home_team_name;
+    const won = ms != null && os != null && ms > os;
+    items.push({
+      title: `${won ? "W" : "L"} ${home ? "vs" : "@"} ${opp} ${ms}–${os}`,
+      subtitle: `Latest game · ${g.official_date}`,
+      href: `/games/${g.game_pk}`,
+    });
+  }
+
+  // current-season leaders (HR, strikeouts)
+  const latest = await query<{ season: number }>(
+    `SELECT MAX(season) AS season FROM games WHERE game_type='R'`,
+  );
+  const season = latest[0]?.season;
+  if (season) {
+    const hr = await query<{ player_id: number; full_name: string; home_runs: number }>(
+      `SELECT b.player_id, pl.full_name, b.home_runs
+       FROM v_player_season_batting b JOIN players pl USING(player_id)
+       WHERE b.season=$1 ORDER BY b.home_runs DESC LIMIT 1`,
+      [season],
+    );
+    if (hr[0]?.home_runs) {
+      seen.add(hr[0].player_id);
+      items.push({
+        title: hr[0].full_name,
+        subtitle: `${hr[0].home_runs} HR · ${season} team leader`,
+        href: `/players/${hr[0].player_id}`,
+      });
+    }
+    const so = await query<{ player_id: number; full_name: string; strike_outs: number }>(
+      `SELECT p.player_id, pl.full_name, p.strike_outs
+       FROM v_player_season_pitching p JOIN players pl USING(player_id)
+       WHERE p.season=$1 ORDER BY p.strike_outs DESC LIMIT 1`,
+      [season],
+    );
+    if (so[0]?.strike_outs) {
+      seen.add(so[0].player_id);
+      items.push({
+        title: so[0].full_name,
+        subtitle: `${so[0].strike_outs} K · ${season} team leader`,
+        href: `/players/${so[0].player_id}`,
+      });
+    }
+  }
+
+  // career HR leader (becomes all-time once full history is ingested)
+  const chr = await query<{ player_id: number; full_name: string; home_runs: number }>(
+    `SELECT player_id, full_name, home_runs FROM mv_career_batting_leaders
+     ORDER BY home_runs DESC LIMIT 1`,
+  );
+  if (chr[0]?.home_runs && !seen.has(chr[0].player_id)) {
+    items.push({
+      title: chr[0].full_name,
+      subtitle: `${chr[0].home_runs} HR · franchise career leader`,
+      href: `/players/${chr[0].player_id}`,
+    });
+  }
+
+  // most recent postseason run
+  const ps = await query<{ season: number }>(
+    `SELECT season FROM v_postseason_series ORDER BY season DESC LIMIT 1`,
+  );
+  if (ps[0]?.season) {
+    items.push({
+      title: `${ps[0].season} Postseason`,
+      subtitle: "Playoff run · series & results",
+      href: `/postseason/${ps[0].season}`,
+    });
+  }
+
+  return items;
 }
 
 /** Editorial "Today in History" blurbs for a calendar date. */

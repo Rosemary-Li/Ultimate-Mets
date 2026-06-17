@@ -198,4 +198,5 @@ export interface TeamSeason {
   runs_allowed: number | null;
   run_diff: number | null;
   streak: string | null;
+  home_attendance?: number | null;
 }

@@ -47,7 +47,7 @@ COLUMNS = [
     "home_team_id", "home_team_name", "home_score", "home_is_winner",
     "away_team_id", "away_team_name", "away_score", "away_is_winner",
     "venue_id", "venue_name", "mets_is_home",
-    "series_description", "series_game_number",
+    "series_description", "series_game_number", "attendance",
 ]
 
 
@@ -59,7 +59,7 @@ def fetch_schedule(start_date: str, end_date: str) -> dict:
         "teamId": METS_TEAM_ID,
         "startDate": start_date,
         "endDate": end_date,
-        "hydrate": "team,venue,linescore",
+        "hydrate": "team,venue,linescore,gameInfo",
     })
     url = f"{API_BASE}/schedule?{params}"
     log.info("GET %s", url)
@@ -107,6 +107,7 @@ def transform(payload: dict) -> list[dict]:
                 "mets_is_home": 1 if home_team.get("id") == METS_TEAM_ID else 0,
                 "series_description": g.get("seriesDescription"),
                 "series_game_number": g.get("seriesGameNumber"),
+                "attendance": (g.get("gameInfo") or {}).get("attendance"),
             }
     return list(by_pk.values())
 
