@@ -1,0 +1,97 @@
+===== run_daily start 2026-06-17 12:37:44 EDT =====
+>> games
+2026-06-17 12:37:44  INFO     Backfill range 2026-06-15 ~ 2026-06-17  ->  postgresql://localhost:5432/ultimate_mets
+2026-06-17 12:37:44  INFO     GET https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=121&startDate=2026-06-15&endDate=2026-06-17&hydrate=team%2Cvenue%2Clinescore%2CgameInfo
+2026-06-17 12:37:45  INFO     Done: wrote/updated 3 games (3 returned by API)
+>> boxscores
+2026-06-17 12:37:45  INFO     Ingesting boxscores for 2026-06-15 ~ 2026-06-17 -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 12:37:45  INFO     2 finished games to process
+2026-06-17 12:37:47  INFO     Done: 42 batting lines, 17 pitching lines
+>> linescores
+2026-06-17 12:37:47  INFO     Ingesting linescores for 2026-06-15 ~ 2026-06-17 -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 12:37:47  INFO     2 finished games to process
+2026-06-17 12:38:17  ERROR    Linescore ingestion failed
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 1344, in do_open
+    h.request(req.get_method(), req.selector, req.data, headers,
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 1319, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 1365, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 1314, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 1074, in _send_output
+    self.send(msg)
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 1018, in send
+    self.connect()
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 1460, in connect
+    self.sock = self._context.wrap_socket(self.sock,
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/ssl.py", line 455, in wrap_socket
+    return self.sslsocket_class._create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/ssl.py", line 1046, in _create
+    self.do_handshake()
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/ssl.py", line 1317, in do_handshake
+    self._sslobj.do_handshake()
+TimeoutError: _ssl.c:983: The handshake operation timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/rosemary/Desktop/Ultimate Mets/Ultimate Mets/data-pipeline/ingest_linescores.py", line 103, in main
+    ls = api_get(f"game/{game_pk}/linescore")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/rosemary/Desktop/Ultimate Mets/Ultimate Mets/data-pipeline/_common.py", line 28, in api_get
+    with urlopen(req, timeout=30) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 515, in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 532, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 1392, in https_open
+    return self.do_open(http.client.HTTPSConnection, req,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 1347, in do_open
+    raise URLError(err)
+urllib.error.URLError: <urlopen error _ssl.c:983: The handshake operation timed out>
+===== run_daily end   2026-06-17 12:38:17 EDT (exit 1) =====
+
+===== run_daily start 2026-06-17 12:57:54 EDT =====
+>> games
+2026-06-17 12:57:54  INFO     Backfill range 2026-06-15 ~ 2026-06-17  ->  postgresql://localhost:5432/ultimate_mets
+2026-06-17 12:57:54  INFO     GET https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=121&startDate=2026-06-15&endDate=2026-06-17&hydrate=team%2Cvenue%2Clinescore%2CgameInfo
+2026-06-17 12:57:54  INFO     Done: wrote/updated 3 games (3 returned by API)
+>> boxscores
+2026-06-17 12:57:54  INFO     Ingesting boxscores for 2026-06-15 ~ 2026-06-17 -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 12:57:54  INFO     2 finished games to process
+2026-06-17 12:57:55  INFO     Done: 42 batting lines, 17 pitching lines
+>> linescores
+2026-06-17 12:57:55  INFO     Ingesting linescores for 2026-06-15 ~ 2026-06-17 -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 12:57:55  INFO     2 finished games to process
+2026-06-17 12:57:56  INFO     Done: 18 inning rows
+>> media
+2026-06-17 12:57:56  INFO     Ingesting media highlights for 2026-06-13 ~ 2026-06-17 -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 12:57:56  INFO     4 games to scan for highlights
+2026-06-17 12:57:59  INFO     Done: 28 media items
+>> players
+2026-06-17 12:57:59  INFO     Ingesting players for seasons [2026] -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 12:58:00  INFO     Collected 47 unique person ids; fetching bios...
+2026-06-17 12:58:00  INFO     Done: wrote/updated 47 players
+>> standings
+2026-06-17 12:58:00  INFO     Ingesting standings for 1 season(s) -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 12:58:01  INFO     Done: wrote/updated 1 seasons
+>> refresh leaderboards
+REFRESH MATERIALIZED VIEW
+REFRESH MATERIALIZED VIEW
+>> done (all stages ok)
+===== run_daily end   2026-06-17 12:58:01 EDT (exit 0) =====
+

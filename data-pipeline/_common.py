@@ -2,6 +2,8 @@
 import json
 import logging
 import os
+import time
+from urllib.error import URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -19,14 +21,31 @@ logging.basicConfig(
 )
 
 
-def api_get(path: str, **params) -> dict:
-    """GET {API_BASE}/{path}?{params} and return parsed JSON."""
+def api_get(path: str, retries: int = 3, **params) -> dict:
+    """GET {API_BASE}/{path}?{params} and return parsed JSON.
+
+    Retries transient network errors (timeouts / connection resets) with a short
+    backoff, so an unattended daily run isn't killed by a single hiccup.
+    """
     url = f"{API_BASE}/{path}"
     if params:
         url += "?" + urlencode(params)
     req = Request(url, headers={"User-Agent": "ultimate-mets-ingest/1.0"})
-    with urlopen(req, timeout=30) as resp:
-        return json.load(resp)
+    last_err = None
+    for attempt in range(1, retries + 1):
+        try:
+            with urlopen(req, timeout=30) as resp:
+                return json.load(resp)
+        except (URLError, TimeoutError, ConnectionError) as err:
+            last_err = err
+            if attempt < retries:
+                wait = 2 ** attempt  # 2s, 4s, ...
+                logging.warning(
+                    "API %s failed (attempt %d/%d): %s — retrying in %ds",
+                    path, attempt, retries, err, wait,
+                )
+                time.sleep(wait)
+    raise last_err
 
 
 def connect(dsn: str = DEFAULT_DSN):
