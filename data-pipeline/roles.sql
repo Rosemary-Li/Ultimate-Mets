@@ -34,21 +34,22 @@ GRANT USAGE  ON SCHEMA public            TO mets_pipeline, mets_web, mets_editor
 -- ---- auto-data tables: pipeline writes, web reads ----
 -- (List tables explicitly so editorial tables are never swept in by a blanket grant.)
 GRANT SELECT, INSERT, UPDATE, DELETE
-  ON games, players, batting_stats, pitching_stats, team_season, game_linescore
+  ON games, players, batting_stats, pitching_stats, team_season, game_linescore, media_items
   TO mets_pipeline;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO mets_pipeline;  -- media_items SERIAL
 
 GRANT SELECT
-  ON games, players, batting_stats, pitching_stats, team_season, game_linescore
+  ON games, players, batting_stats, pitching_stats, team_season, game_linescore, media_items
   TO mets_web;
 
 -- ---- editorial tables (schema_editorial.sql): editor writes, web reads ----
 -- The pipeline role is deliberately omitted, so an automated run can't touch them.
 GRANT SELECT, INSERT, UPDATE, DELETE
-  ON media_items, today_in_history, trending
+  ON today_in_history, trending
   TO mets_editor;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO mets_editor;  -- SERIAL ids
 GRANT SELECT
-  ON media_items, today_in_history, trending
+  ON today_in_history, trending
   TO mets_web;
 
 -- ---- views are read by the web role ----

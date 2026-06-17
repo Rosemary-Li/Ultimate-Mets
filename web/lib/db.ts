@@ -446,7 +446,7 @@ export async function getMedia(opts: {
   season?: number;
   limit?: number;
 } = {}): Promise<MediaItem[]> {
-  const clauses: string[] = [];
+  const clauses: string[] = ["thumb_url IS NOT NULL"];
   const params: unknown[] = [];
   if (opts.type) {
     params.push(opts.type);
@@ -456,14 +456,21 @@ export async function getMedia(opts: {
     params.push(opts.season);
     clauses.push(`season = $${params.length}`);
   }
-  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  params.push(opts.limit ?? 100);
+  params.push(opts.limit ?? 120);
   return query<MediaItem>(
-    `SELECT * FROM media_items ${where}
-     ORDER BY featured DESC, published_at DESC NULLS LAST
+    `SELECT * FROM media_items WHERE ${clauses.join(" AND ")}
+     ORDER BY published_at DESC NULLS LAST, featured DESC
      LIMIT $${params.length}`,
     params,
   );
+}
+
+/** Distinct seasons that have media, newest first (for filter chips). */
+export async function getMediaSeasons(): Promise<number[]> {
+  const rows = await query<{ season: number }>(
+    `SELECT DISTINCT season FROM media_items WHERE season IS NOT NULL ORDER BY season DESC`,
+  );
+  return rows.map((r) => r.season);
 }
 
 // ---------------------------------------------------------------- compare (Lab)

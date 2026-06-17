@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Player } from "@/lib/types";
 import ChartView from "@/components/ChartView";
+import { headshot } from "@/lib/images";
 
 type Mode = "batting" | "pitching";
 
@@ -181,6 +182,8 @@ export default function LabPage() {
       <div className="lab-slots">
         {selected.map((s) => (
           <span key={s.id} className="lab-slot">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="lab-slot-face" src={headshot(s.id)} alt="" />
             {s.name}
             <button onClick={() => remove(s.id)}>✕</button>
           </span>
@@ -262,7 +265,9 @@ export default function LabPage() {
                   <th></th>
                   {selected.map((s) => (
                     <th key={s.id}>
-                      {s.name}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img className="lab-th-face" src={headshot(s.id)} alt="" />
+                      <div>{s.name}</div>
                       <span className="rm" onClick={() => remove(s.id)}>
                         ✕ remove
                       </span>

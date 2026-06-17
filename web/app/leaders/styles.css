@@ -84,6 +84,24 @@
 .route-leaders .le-table tbody tr:hover {
   background: #fff7ed;
 }
+.route-leaders .le-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+.route-leaders .le-player:hover {
+  color: var(--mets-orange);
+}
+.route-leaders .le-face {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
 .route-leaders .le-rank {
   font-family: var(--num-font);
   color: var(--text-light);

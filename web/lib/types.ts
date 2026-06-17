@@ -47,15 +47,19 @@ export interface TodayHistory {
 
 export interface MediaItem {
   id: number;
+  external_id: string | null;
   media_type: string | null;
   title: string | null;
   description: string | null;
   era: string | null;
   season: number | null;
+  game_pk: number | null;
   player_name: string | null;
   source: string | null;
   url: string | null;
+  thumb_url: string | null;
   published_at: string | null;
+  duration: string | null;
   featured: boolean | null;
 }
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getLeaders, getSeasons, type LeaderScope, type LeaderType } from "@/lib/db";
+import { headshot } from "@/lib/images";
 
 export const dynamic = "force-dynamic";
 
@@ -121,7 +122,16 @@ export default async function LeadersPage({
                 <tr key={r.player_id}>
                   <td className={`le-rank ${i < 3 ? "top" : ""}`}>{i + 1}</td>
                   <td>
-                    <Link href={`/players/${r.player_id}`}>{r.full_name}</Link>
+                    <Link href={`/players/${r.player_id}`} className="le-player">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        className="le-face"
+                        src={headshot(r.player_id)}
+                        alt=""
+                        loading="lazy"
+                      />
+                      <span>{r.full_name}</span>
+                    </Link>
                   </td>
                   <td className="le-pos">{r.primary_position ?? "—"}</td>
                   <td>

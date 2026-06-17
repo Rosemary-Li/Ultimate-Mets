@@ -1,18 +1,9 @@
 import Link from "next/link";
 import { getPlayers } from "@/lib/db";
+import { headshot } from "@/lib/images";
 import type { Player } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-
-function initials(name: string | null): string {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/);
-  return (
-    parts.length === 1
-      ? name.slice(0, 2)
-      : parts[0][0] + parts[parts.length - 1][0]
-  ).toUpperCase();
-}
 
 export default async function PlayersIndexPage({
   searchParams,
@@ -32,15 +23,20 @@ export default async function PlayersIndexPage({
           href={`/players/${p.player_id}`}
           className="pl-card"
         >
-          <span className="pl-avatar">{initials(p.full_name)}</span>
-          <span>
-            <div className="pl-name">{p.full_name}</div>
-            <div className="pl-meta">
-              {[p.primary_position, p.primary_number && `#${p.primary_number}`]
-                .filter(Boolean)
-                .join(" · ")}
-            </div>
+          <span className="pl-photo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={headshot(p.player_id)}
+              alt={p.full_name ?? ""}
+              loading="lazy"
+            />
           </span>
+          <div className="pl-name">{p.full_name}</div>
+          <div className="pl-meta">
+            {[p.primary_position, p.primary_number && `#${p.primary_number}`]
+              .filter(Boolean)
+              .join(" · ")}
+          </div>
         </Link>
       ))}
     </div>

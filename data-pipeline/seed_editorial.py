@@ -63,8 +63,9 @@ MEDIA_ITEMS = [
 
 
 def seed(conn) -> None:
+    # media_items is auto-ingested from MLB highlights (ingest_media.py) — not seeded here.
     with conn.cursor() as cur:
-        cur.execute("TRUNCATE today_in_history, trending, media_items RESTART IDENTITY")
+        cur.execute("TRUNCATE today_in_history, trending RESTART IDENTITY")
         cur.executemany(
             "INSERT INTO today_in_history (event_month, event_day, event_year, headline, blurb, meta) "
             "VALUES (%s,%s,%s,%s,%s,%s)",
@@ -73,11 +74,6 @@ def seed(conn) -> None:
         cur.executemany(
             "INSERT INTO trending (position, title, subtitle, href) VALUES (%s,%s,%s,%s)",
             TRENDING,
-        )
-        cur.executemany(
-            "INSERT INTO media_items (media_type, title, description, era, season, player_name, source, url, published_at, featured) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-            MEDIA_ITEMS,
         )
     conn.commit()
 
@@ -91,8 +87,8 @@ def main(argv=None) -> int:
     try:
         conn = connect(dsn)
         seed(conn)
-        log.info("Done: %d history, %d trending, %d media",
-                 len(TODAY_IN_HISTORY), len(TRENDING), len(MEDIA_ITEMS))
+        log.info("Done: %d history, %d trending (media via ingest_media.py)",
+                 len(TODAY_IN_HISTORY), len(TRENDING))
         return 0
     except Exception:
         log.exception("Editorial seed failed")

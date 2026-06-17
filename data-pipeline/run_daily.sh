@@ -11,6 +11,7 @@ cd "$(dirname "$0")"
 echo ">> games"      ; python3 ingest_games.py
 echo ">> boxscores"  ; python3 ingest_boxscores.py        # batting/pitching for recent finals
 echo ">> linescores" ; python3 ingest_linescores.py       # per-inning runs for recent finals
+echo ">> media"      ; python3 ingest_media.py            # real highlight videos + thumbnails
 echo ">> players"    ; python3 ingest_players.py          # current-season roster + bios
 echo ">> standings"  ; python3 ingest_standings.py        # current-season standings line
 

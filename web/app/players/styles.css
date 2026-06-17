@@ -36,47 +36,54 @@
 
 .route-players .pl-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 14px;
   margin-bottom: 32px;
 }
 .route-players .pl-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  text-align: center;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: 12px;
+  padding: 16px 10px 14px;
   transition: all 0.15s;
 }
 .route-players .pl-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.09);
   border-color: var(--mets-orange);
 }
-.route-players .pl-avatar {
-  width: 40px;
-  height: 40px;
+.route-players .pl-photo {
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--mets-blue), var(--mets-orange));
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
-  flex-shrink: 0;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1e3a8a, #0b1f4a);
+  border: 2px solid var(--border);
+  margin-bottom: 10px;
+}
+.route-players .pl-card:hover .pl-photo {
+  border-color: var(--mets-orange);
+}
+.route-players .pl-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
 }
 .route-players .pl-name {
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.25;
 }
 .route-players .pl-meta {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-muted);
   font-family: var(--num-font);
-  margin-top: 2px;
+  margin-top: 3px;
 }
 .route-players .pl-empty {
   color: var(--text-muted);
@@ -114,7 +121,28 @@
 .route-players .pl-hero-inner {
   max-width: 1500px;
   margin: 0 auto;
-  padding: 28px 24px;
+  padding: 26px 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.route-players .pl-hero-photo {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #1e3a8a, #0b1f4a);
+  border: 3px solid var(--mets-orange);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+}
+.route-players .pl-hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+.route-players .pl-hero-id {
   display: flex;
   align-items: center;
   gap: 20px;

@@ -62,6 +62,25 @@
   padding: 7px 8px 7px 14px;
   border-radius: 20px;
 }
+.route-lab .lab-slot-face {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  background: rgba(255, 255, 255, 0.2);
+}
+.route-lab .lab-th-face {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  display: block;
+  margin: 0 auto 6px;
+}
 .route-lab .lab-slot button {
   background: rgba(255, 255, 255, 0.2);
   color: white;

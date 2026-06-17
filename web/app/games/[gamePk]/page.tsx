@@ -7,10 +7,28 @@ import {
   getLinescore,
 } from "@/lib/db";
 import type { BoxBatting, BoxPitching, LinescoreInning } from "@/lib/types";
+import { headshot, teamLogo } from "@/lib/images";
 
 export const dynamic = "force-dynamic";
 
 const num = (n: number | null | undefined) => (n == null ? 0 : n);
+
+// small headshot cell for box-score player names
+function PlayerCell({
+  id,
+  name,
+}: {
+  id: number;
+  name: string | number | null;
+}) {
+  return (
+    <Link href={`/players/${id}`} className="ga-pl">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={headshot(id)} alt="" loading="lazy" />
+      <span>{name}</span>
+    </Link>
+  );
+}
 
 function Linescore({
   rows,
@@ -91,7 +109,9 @@ function BattingTable({ team, rows }: { team: string; rows: BoxBatting[] }) {
           <tbody>
             {rows.map((b) => (
               <tr key={b.player_id}>
-                <td>{b.full_name ?? b.player_id}</td>
+                <td>
+                  <PlayerCell id={b.player_id} name={b.full_name ?? b.player_id} />
+                </td>
                 <td>{b.position ?? "—"}</td>
                 <td>{num(b.at_bats)}</td>
                 <td>{num(b.runs)}</td>
@@ -133,7 +153,9 @@ function PitchingTable({ team, rows }: { team: string; rows: BoxPitching[] }) {
           <tbody>
             {rows.map((p) => (
               <tr key={p.player_id}>
-                <td>{p.full_name ?? p.player_id}</td>
+                <td>
+                  <PlayerCell id={p.player_id} name={p.full_name ?? p.player_id} />
+                </td>
                 <td>{p.innings_pitched ?? "—"}</td>
                 <td>{num(p.hits)}</td>
                 <td>{num(p.runs)}</td>
@@ -186,11 +208,19 @@ export default async function GameDetailPage({
           </div>
           <div className="ga-score-line">
             <span className={`ga-team ${awayWon ? "win" : ""}`}>
+              {game.away_team_id && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="ga-team-logo" src={teamLogo(game.away_team_id)} alt="" />
+              )}
               {awayName}
               <span className="rs">{game.away_score}</span>
             </span>
             <span className="ga-at">@</span>
             <span className={`ga-team ${!awayWon ? "win" : ""}`}>
+              {game.home_team_id && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="ga-team-logo" src={teamLogo(game.home_team_id)} alt="" />
+              )}
               {homeName}
               <span className="rs">{game.home_score}</span>
             </span>

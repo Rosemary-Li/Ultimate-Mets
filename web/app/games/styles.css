@@ -73,6 +73,18 @@
   flex: 1;
   font-weight: 600;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.route-games .ga-vs {
+  color: var(--text-light);
+  font-size: 12px;
+}
+.route-games .ga-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 .route-games .ga-score {
   font-family: var(--num-font);
@@ -100,6 +112,31 @@
   display: flex;
   align-items: center;
   gap: 18px;
+}
+.route-games .ga-team-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 10px;
+}
+/* box-score player name cell with headshot */
+.route-games .ga-pl {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.route-games .ga-pl:hover {
+  color: var(--mets-orange);
+}
+.route-games .ga-pl img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  background: #e5e7eb;
+  flex-shrink: 0;
 }
 .route-games .ga-team {
   font-size: 22px;

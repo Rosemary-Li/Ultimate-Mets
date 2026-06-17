@@ -156,6 +156,35 @@ CREATE TABLE IF NOT EXISTS team_season (
     updated_at     TIMESTAMPTZ DEFAULT now()
 );
 
+-- Media archive — real game highlights from the MLB content API (auto-ingested
+-- by ingest_media.py). external_id (the MLB highlight id) dedups on re-runs.
+CREATE TABLE IF NOT EXISTS media_items (
+    id           SERIAL PRIMARY KEY,
+    external_id  TEXT UNIQUE,        -- MLB highlight id (idempotency key)
+    media_type   TEXT,               -- 'video' | 'photo' | 'article' | 'audio'
+    title        TEXT,
+    description  TEXT,
+    era          TEXT,
+    season       INTEGER,
+    game_pk      BIGINT,
+    player_name  TEXT,
+    source       TEXT,
+    url          TEXT,               -- playable media (mp4)
+    thumb_url    TEXT,               -- thumbnail image
+    published_at TEXT,
+    duration     TEXT,
+    featured     BOOLEAN DEFAULT false,
+    updated_at   TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE media_items ADD COLUMN IF NOT EXISTS external_id TEXT;
+ALTER TABLE media_items ADD COLUMN IF NOT EXISTS game_pk BIGINT;
+ALTER TABLE media_items ADD COLUMN IF NOT EXISTS thumb_url TEXT;
+ALTER TABLE media_items ADD COLUMN IF NOT EXISTS duration TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_media_external ON media_items (external_id);
+CREATE INDEX IF NOT EXISTS idx_media_type   ON media_items (media_type);
+CREATE INDEX IF NOT EXISTS idx_media_season ON media_items (season);
+
+
 -- One row per (game, inning): the linescore grid. Totals (R/H/E) are SUM()s.
 CREATE TABLE IF NOT EXISTS game_linescore (
     game_pk      BIGINT  NOT NULL,

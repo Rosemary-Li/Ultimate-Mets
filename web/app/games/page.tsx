@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getRecentGames } from "@/lib/db";
+import { teamLogo } from "@/lib/images";
 import type { Game } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -9,8 +10,9 @@ function metsView(g: Game) {
   const metsScore = home ? g.home_score : g.away_score;
   const oppScore = home ? g.away_score : g.home_score;
   const opp = home ? g.away_team_name : g.home_team_name;
+  const oppId = home ? g.away_team_id : g.home_team_id;
   const won = metsScore != null && oppScore != null && metsScore > oppScore;
-  return { home, metsScore, oppScore, opp, won };
+  return { home, metsScore, oppScore, opp, oppId, won };
 }
 
 export default async function GamesIndexPage() {
@@ -38,7 +40,11 @@ export default async function GamesIndexPage() {
                   {v.won ? "W" : "L"}
                 </span>
                 <span className="ga-match">
-                  {v.home ? "vs " : "@ "}
+                  <span className="ga-vs">{v.home ? "vs" : "@"}</span>
+                  {v.oppId && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="ga-logo" src={teamLogo(v.oppId)} alt="" />
+                  )}
                   {v.opp}
                 </span>
                 <span className="ga-score">

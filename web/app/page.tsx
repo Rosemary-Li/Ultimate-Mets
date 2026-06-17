@@ -1,413 +1,238 @@
 import "./home.css";
 import Link from "next/link";
-import { HREF } from "@/lib/nav";
 import {
   getRecentGames,
   getSiteStats,
   getMediaCount,
-  getTrending,
+  getLeaders,
   getAutoTrending,
+  getSeasons,
   getTodayEditorial,
   getGameAnniversaries,
 } from "@/lib/db";
+import { headshot, teamLogo } from "@/lib/images";
+import type { Game } from "@/lib/types";
 import RecentlyViewed from "@/components/RecentlyViewed";
-
-interface Entry {
-  key: string;
-  icon: string;
-  title: string;
-  href: string;
-  desc: string;
-  meta: string[];
-}
-
-const DETAIL_ENTRIES: Entry[] = [
-  {
-    key: "players",
-    icon: "👤",
-    title: "Players",
-    href: HREF.players,
-    desc: "Career profiles for every Met — rosters, bios, and season-by-season batting & pitching, split by current roster and historical players.",
-    meta: ["rosters + bios"],
-  },
-  {
-    key: "seasons",
-    icon: "📅",
-    title: "Seasons",
-    href: HREF.seasons,
-    desc: "Year-by-year breakdowns — record, standings finish, run differential, and the full game log for each season.",
-    meta: ["standings + game logs"],
-  },
-  {
-    key: "games",
-    icon: "⚾",
-    title: "Games",
-    href: HREF.games,
-    desc: "Single-game recaps with the linescore and a full box score — batting and pitching lines for both teams.",
-    meta: ["box scores + linescore"],
-  },
-];
-
-const TOOL_ENTRIES: Entry[] = [
-  {
-    key: "leaders",
-    icon: "🏆",
-    title: "Leaders",
-    href: HREF.leaders,
-    desc: "Career and single-season leaderboards — batting and pitching — computed from per-game data.",
-    meta: ["career + season"],
-  },
-  {
-    key: "post",
-    icon: "🥇",
-    title: "Postseason",
-    href: HREF.postseason,
-    desc: "Every postseason run in the database — series by series, with the Mets' result in each round and game-by-game scores.",
-    meta: ["series + results", "by year"],
-  },
-  {
-    key: "lab",
-    icon: "⚗️",
-    title: "Lab",
-    href: HREF.lab,
-    desc: "Side-by-side comparison tool. Stack 2–4 players and run a stat-by-stat showdown of their career numbers.",
-    meta: ["compare 2–4 players", "career stats"],
-  },
-  {
-    key: "media",
-    icon: "🎬",
-    title: "Media",
-    href: HREF.media,
-    desc: "Curated archive of videos, photos, articles, and podcasts. Filter by type, era, season, or player.",
-    meta: ["video · photo · audio"],
-  },
-];
-
-const TRENDING = [
-  { name: "Pete Alonso", meta: "Player · 1B · 226 HR as a Met", href: HREF.players },
-  { name: "2024 Mets", meta: "Season · 89-73 · NLCS", href: HREF.seasons },
-  {
-    name: "1986 World Series Game 6",
-    meta: "Game · Oct 25, 1986",
-    href: HREF.games,
-  },
-  { name: "Career bWAR Leaders", meta: "Leaders · all-time", href: HREF.leaders },
-  {
-    name: "Wright vs Hernandez vs HoJo",
-    meta: "Lab · 3-way compare",
-    href: HREF.lab,
-  },
-];
+import ChartView from "@/components/ChartView";
 
 export const dynamic = "force-dynamic";
 
+const METS_ID = 121;
+
+const EXPLORE = [
+  { key: "players", icon: "👤", title: "Players", href: "/players", blurb: "Every Met, 1962–2026" },
+  { key: "seasons", icon: "📅", title: "Seasons", href: "/seasons", blurb: "65 years of standings" },
+  { key: "games", icon: "⚾", title: "Games", href: "/games", blurb: "Box scores & linescores" },
+  { key: "leaders", icon: "🏆", title: "Leaders", href: "/leaders", blurb: "Career & season rankings" },
+  { key: "post", icon: "🥇", title: "Postseason", href: "/postseason", blurb: "11 playoff runs" },
+  { key: "lab", icon: "⚗️", title: "Lab", href: "/lab", blurb: "Compare players head-to-head" },
+  { key: "media", icon: "🎬", title: "Media", href: "/media", blurb: "Video, photos & more" },
+];
+
+function metsView(g: Game) {
+  const home = g.mets_is_home === 1;
+  const metsScore = home ? g.home_score : g.away_score;
+  const oppScore = home ? g.away_score : g.home_score;
+  const oppId = home ? g.away_team_id : g.home_team_id;
+  const oppName = home ? g.away_team_name : g.home_team_name;
+  const won = metsScore != null && oppScore != null && metsScore > oppScore;
+  return { home, metsScore, oppScore, oppId, oppName, won };
+}
+
 export default async function HomePage() {
-  // Real data from the pipeline DB (empty array if the pipeline hasn't run).
-  const latestGames = await getRecentGames(5);
-
-  // Hero counts computed from the DB; fall back to illustrative figures if empty.
-  const stats = await getSiteStats();
-  const mediaCount = await getMediaCount();
-  const heroStats = [
-    { num: stats?.seasons ? String(stats.seasons) : "64", lbl: "Seasons" },
-    { num: stats?.players ? stats.players.toLocaleString() : "1,243", lbl: "Players" },
-    { num: stats?.games ? stats.games.toLocaleString() : "0", lbl: "Games" },
-    { num: stats?.postseasons ? String(stats.postseasons) : "11", lbl: "Postseasons" },
-    { num: mediaCount ? mediaCount.toLocaleString() : "0", lbl: "Media Items" },
-  ];
-
-  // Real counts for the entry-card pills, keyed by section.
-  const seasonRange =
-    stats?.first_season && stats.last_season
-      ? ` (${stats.first_season}–${stats.last_season})`
-      : "";
-  const entryCounts: Record<string, string | undefined> = {
-    players: stats?.players ? `${stats.players.toLocaleString()} players` : undefined,
-    seasons: stats?.seasons
-      ? `${stats.seasons} season${stats.seasons > 1 ? "s" : ""}${seasonRange}`
-      : undefined,
-    games: stats?.games ? `${stats.games.toLocaleString()} games` : undefined,
-    media: mediaCount ? `${mediaCount.toLocaleString()} items` : undefined,
-  };
-  const searchMeta = stats
-    ? `⌘K · search across ${stats.players.toLocaleString()} players · ${stats.seasons} seasons · ${mediaCount} media items`
-    : "⌘K · search players, seasons, games";
-
-  // "Today in Mets History" — editorial blurbs + auto game anniversaries.
   const now = new Date();
   const month = now.getMonth() + 1;
   const day = now.getDate();
-  const todayLabel = now.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-  });
-  const [autoTrending, trendingDb, editorial, anniversaries] = await Promise.all([
-    getAutoTrending(),
-    getTrending(),
-    getTodayEditorial(month, day),
-    getGameAnniversaries(month, day),
-  ]);
-  const todayEvents: { year: number | null; text: string; meta: string }[] = [
-    ...editorial.map((e) => ({
-      year: e.event_year,
-      text: e.blurb ?? e.headline ?? "",
-      meta: e.meta ?? "",
-    })),
-    ...anniversaries.map((g) => {
-      const home = g.mets_is_home === 1;
-      const ms = home ? g.home_score : g.away_score;
-      const os = home ? g.away_score : g.home_score;
-      const opp = home ? g.away_team_name : g.home_team_name;
-      const won = ms != null && os != null && ms > os;
-      return {
-        year: g.season,
-        text: `Mets ${won ? "beat" : "lost to"} the ${opp} ${ms}–${os}.`,
-        meta: `${g.official_date} · ${g.venue_name}`,
-      };
+
+  const [recent, hrLeaders, stats, mediaCount, trending, seasons, editorial, anniv] =
+    await Promise.all([
+      getRecentGames(11),
+      getLeaders({ scope: "career", type: "batting", stat: "home_runs", limit: 6 }),
+      getSiteStats(),
+      getMediaCount(),
+      getAutoTrending(),
+      getSeasons(),
+      getTodayEditorial(month, day),
+      getGameAnniversaries(month, day),
+    ]);
+
+  const latest = recent[0];
+  const form = recent.slice(0, 10);
+  const formW = form.filter((g) => metsView(g).won).length;
+
+  const heroStats = [
+    { num: stats?.seasons ?? 65, lbl: "Seasons" },
+    { num: (stats?.players ?? 0).toLocaleString(), lbl: "Players" },
+    { num: (stats?.games ?? 0).toLocaleString(), lbl: "Games" },
+    { num: stats?.postseasons ?? 11, lbl: "Postseasons" },
+    { num: mediaCount, lbl: "Media" },
+  ];
+
+  const maxHr = Math.max(1, ...hrLeaders.map((l) => Number(l.value) || 0));
+  const todayLabel = now.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  const todayItems = [
+    ...editorial.map((e) => ({ year: e.event_year, text: e.blurb ?? e.headline ?? "" })),
+    ...anniv.map((g) => {
+      const v = metsView(g);
+      return { year: g.season, text: `${v.won ? "Beat" : "Lost to"} the ${v.oppName} ${v.metsScore}–${v.oppScore}` };
     }),
   ]
     .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
-    .slice(0, 8);
-  // Prefer auto-derived trending (real data); fall back to the editorial table,
-  // then the static seed.
-  const trendingList =
-    autoTrending.length > 0
-      ? autoTrending.map((t) => ({ name: t.title, meta: t.subtitle, href: t.href }))
-      : trendingDb.length
-        ? trendingDb.map((t) => ({
-            name: t.title ?? "",
-            meta: t.subtitle ?? "",
-            href: t.href ?? "#",
-          }))
-        : TRENDING;
+    .slice(0, 4);
 
   return (
     <>
-      <section className="hero">
-        <div className="hero-inner">
-          <h1 className="hero-title">
-            Ultimate <span className="accent">Mets</span>
-            <br />
-            Database
-          </h1>
-          <p className="hero-sub">
-            Every player, every season, every game, every postseason moment in
-            franchise history — searchable, comparable, and connected.
-          </p>
-          <div className="hero-search">
-            <input placeholder='Try "David Wright", "1986 World Series", "Pete Alonso HR"...' />
-            <div className="hero-search-meta">{searchMeta}</div>
+      {/* ---------- HERO ---------- */}
+      <section className="hm-hero">
+        <div className="hm-hero-inner">
+          <div className="hm-hero-text">
+            <h1>
+              Ultimate <span>Mets</span>
+            </h1>
+            <p>65 seasons of Amazin'. Every player, game & moment — 1962 to today.</p>
+            <div className="hm-stats">
+              {heroStats.map((s) => (
+                <div key={s.lbl}>
+                  <div className="n">{s.num}</div>
+                  <div className="l">{s.lbl}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="hero-stats">
-            {heroStats.map((s) => (
-              <div className="hero-stat" key={s.lbl}>
-                <div className="num">{s.num}</div>
-                <div className="lbl">{s.lbl}</div>
-              </div>
+          <div className="hm-faces">
+            {hrLeaders.map((l) => (
+              <Link key={l.player_id} href={`/players/${l.player_id}`} title={l.full_name ?? ""}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={headshot(l.player_id)} alt={l.full_name ?? ""} />
+              </Link>
             ))}
           </div>
         </div>
       </section>
 
-      <main className="main">
-        <div>
-          <section className="section">
-            <div className="group-label">
-              <span className="num">A</span>
-              <span className="name">Browse by Detail</span>
-              <span className="desc">— Open a single player, season, or game</span>
-            </div>
-            <div className="entry-grid three">
-              {DETAIL_ENTRIES.map((e) => (
-                <Link className="entry" key={e.key} href={e.href}>
-                  <div className="e-head">
-                    <div className={"e-icon " + e.key}>{e.icon}</div>
-                    <div className="e-arrow">→</div>
+      <main className="hm-main">
+        <div className="hm-col">
+          {/* ---------- LATEST GAME ---------- */}
+          {latest &&
+            (() => {
+              const v = metsView(latest);
+              return (
+                <Link href={`/games/${latest.game_pk}`} className="hm-game">
+                  <div className="hm-game-head">
+                    <span className={`hm-badge ${v.won ? "w" : "l"}`}>
+                      {v.won ? "WIN" : "LOSS"}
+                    </span>
+                    <span className="hm-game-meta">
+                      {latest.official_date} · {latest.venue_name}
+                    </span>
                   </div>
-                  <div className="e-title">{e.title}</div>
-                  <div className="e-desc">{e.desc}</div>
-                  <div className="e-meta">
-                    {entryCounts[e.key] && (
-                      <span className="pill">{entryCounts[e.key]}</span>
-                    )}
-                    {e.meta.map((m, i) => (
-                      <span key={i} className="pill">
-                        {m}
-                      </span>
-                    ))}
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            <div className="group-label">
-              <span className="num">B</span>
-              <span className="name">Tools &amp; Discover</span>
-              <span className="desc">— Rank, compare, browse, watch</span>
-            </div>
-            <div className="entry-grid four">
-              {TOOL_ENTRIES.map((e) => (
-                <Link className="entry" key={e.key} href={e.href}>
-                  <div className="e-head">
-                    <div className={"e-icon " + e.key}>{e.icon}</div>
-                    <div className="e-arrow">→</div>
-                  </div>
-                  <div className="e-title">{e.title}</div>
-                  <div className="e-desc">{e.desc}</div>
-                  <div className="e-meta">
-                    {entryCounts[e.key] && (
-                      <span className="pill">{entryCounts[e.key]}</span>
-                    )}
-                    {e.meta.map((m, i) => (
-                      <span key={i} className="pill">
-                        {m}
-                      </span>
-                    ))}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          {latestGames.length > 0 && (
-            <section className="section">
-              <div className="section-head">
-                <div>
-                  <div className="section-title">Latest Games</div>
-                  <div className="section-sub">
-                    Live from the MLB data pipeline · {latestGames.length} most
-                    recent finals
-                  </div>
-                </div>
-                <Link href={HREF.games} className="section-link">
-                  All games →
-                </Link>
-              </div>
-              <div className="today-card">
-                {latestGames.map((g) => {
-                  const metsHome = g.mets_is_home === 1;
-                  const metsScore = metsHome ? g.home_score : g.away_score;
-                  const oppScore = metsHome ? g.away_score : g.home_score;
-                  const opp = metsHome ? g.away_team_name : g.home_team_name;
-                  const won =
-                    metsScore != null &&
-                    oppScore != null &&
-                    metsScore > oppScore;
-                  return (
-                    <div className="today-row" key={g.game_pk}>
-                      <div
-                        className="today-year"
-                        style={{ color: won ? "var(--c-games)" : undefined }}
-                      >
-                        {won ? "W" : "L"}
-                      </div>
-                      <div className="today-text">
-                        <div className="t">
-                          {metsHome ? "vs" : "@"} {opp} · {metsScore}–{oppScore}
-                        </div>
-                        <div className="meta">
-                          {g.official_date} · {g.venue_name}
-                        </div>
-                      </div>
+                  <div className="hm-game-score">
+                    <div className="hm-team">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={teamLogo(METS_ID)} alt="Mets" />
+                      <span className="nm">Mets</span>
+                      <span className="sc">{v.metsScore}</span>
                     </div>
-                  );
-                })}
+                    <span className="hm-vs">{v.home ? "vs" : "@"}</span>
+                    <div className="hm-team opp">
+                      <span className="sc">{v.oppScore}</span>
+                      <span className="nm">{v.oppName}</span>
+                      {v.oppId && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={teamLogo(v.oppId)} alt={v.oppName ?? ""} />
+                      )}
+                    </div>
+                  </div>
+                  <div className="hm-form">
+                    <span className="hm-form-lbl">Last 10: {formW}-{10 - formW}</span>
+                    {form.map((g) => (
+                      <span key={g.game_pk} className={`hm-pip ${metsView(g).won ? "w" : "l"}`}>
+                        {metsView(g).won ? "W" : "L"}
+                      </span>
+                    ))}
+                  </div>
+                </Link>
+              );
+            })()}
+
+          {/* ---------- CAREER HR LEADERS ---------- */}
+          {hrLeaders.length > 0 && (
+            <section className="hm-card">
+              <div className="hm-card-head">
+                <h2>Career Home Run Leaders</h2>
+                <Link href="/leaders">All leaders →</Link>
+              </div>
+              <div className="hm-leaders">
+                {hrLeaders.map((l, i) => (
+                  <Link key={l.player_id} href={`/players/${l.player_id}`} className="hm-leader">
+                    <span className="hm-rank">{i + 1}</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={headshot(l.player_id)} alt={l.full_name ?? ""} className="hm-face-sm" />
+                    <span className="hm-leader-name">{l.full_name}</span>
+                    <span className="hm-leader-bar">
+                      <span style={{ width: `${(Number(l.value) / maxHr) * 100}%` }} />
+                    </span>
+                    <span className="hm-leader-val">{l.value}</span>
+                  </Link>
+                ))}
               </div>
             </section>
           )}
 
-          <section className="section">
-            <div className="section-head">
-              <div>
-                <div className="section-title">
-                  Today in Mets History · {todayLabel}
-                </div>
-                <div className="section-sub">
-                  What happened on this date — game results from the database, plus
-                  curated notes
-                </div>
-              </div>
-            </div>
-            <div className="today-card">
-              {todayEvents.length === 0 ? (
-                <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                  Nothing recorded for {todayLabel} yet.
-                </div>
-              ) : (
-                todayEvents.map((h, i) => (
-                  <div className="today-row" key={i}>
-                    <div className="today-year">{h.year}</div>
-                    <div className="today-text">
-                      <div className="t">{h.text}</div>
-                      <div className="meta">{h.meta}</div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+          {/* ---------- EXPLORE ---------- */}
+          <section className="hm-explore">
+            {EXPLORE.map((e) => (
+              <Link key={e.key} href={e.href} className={`hm-tile ${e.key}`}>
+                <span className="hm-tile-icon">{e.icon}</span>
+                <span className="hm-tile-title">{e.title}</span>
+                <span className="hm-tile-blurb">{e.blurb}</span>
+              </Link>
+            ))}
           </section>
         </div>
 
-        <aside>
-          <div
-            className="side-card"
-            style={{
-              background:
-                "linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)",
-              borderColor: "#FED7AA",
-            }}
-          >
-            <div
-              className="side-title"
-              style={{ borderBottom: "1px solid #FED7AA" }}
-            >
-              <span style={{ color: "var(--mets-orange)" }}>
-                How to use this site
-              </span>
+        {/* ---------- SIDEBAR ---------- */}
+        <aside className="hm-side">
+          <section className="hm-card">
+            <div className="hm-card-head">
+              <h2>Wins by Season</h2>
+              <Link href="/seasons">History →</Link>
             </div>
-            <div
-              style={{
-                fontSize: 12.5,
-                lineHeight: 1.55,
-                color: "var(--text-muted)",
-              }}
-            >
-              <p style={{ marginBottom: 8 }}>
-                <strong style={{ color: "var(--text)" }}>1.</strong> Pick a
-                section above (Players, Seasons, Games for details — Leaders,
-                Postseason, Lab, Media to explore).
-              </p>
-              <p style={{ marginBottom: 8 }}>
-                <strong style={{ color: "var(--text)" }}>2.</strong> Inside any
-                page,{" "}
-                <span
-                  style={{ color: "var(--mets-orange)", fontWeight: 600 }}
-                >
-                  orange-underlined names
-                </span>{" "}
-                are clickable — they jump to the relevant detail page.
-              </p>
-              <p>
-                <strong style={{ color: "var(--text)" }}>3.</strong> Pages you
-                visit show up in <strong>Recently Viewed</strong> so you can
-                navigate back.
-              </p>
-            </div>
-          </div>
+            <ChartView
+              type="bar"
+              height={150}
+              labels={[...seasons].reverse().map((s) => s.season)}
+              datasets={[{ label: "Wins", data: [...seasons].reverse().map((s) => Number(s.wins)) }]}
+            />
+          </section>
 
-          <RecentlyViewed />
-
-          <div className="side-card">
-            <div className="side-title">
-              <span>Trending This Week</span>
+          <section className="hm-card">
+            <div className="hm-card-head">
+              <h2>Trending</h2>
             </div>
-            {trendingList.map((t, i) => (
-              <Link key={i} href={t.href} className="quicklink">
-                <div className="ql-name">{t.name}</div>
-                <div className="ql-meta">{t.meta}</div>
+            {trending.map((t, i) => (
+              <Link key={i} href={t.href} className="hm-trend">
+                <span className="hm-trend-name">{t.title}</span>
+                <span className="hm-trend-meta">{t.subtitle}</span>
               </Link>
             ))}
-          </div>
+          </section>
+
+          {todayItems.length > 0 && (
+            <section className="hm-card">
+              <div className="hm-card-head">
+                <h2>On {todayLabel}</h2>
+              </div>
+              {todayItems.map((h, i) => (
+                <div key={i} className="hm-today">
+                  <span className="yr">{h.year}</span>
+                  <span className="tx">{h.text}</span>
+                </div>
+              ))}
+            </section>
+          )}
+
+          <RecentlyViewed />
         </aside>
       </main>
     </>

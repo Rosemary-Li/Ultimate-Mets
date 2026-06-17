@@ -1,13 +1,15 @@
 -- ============================================================
 -- Ultimate Mets — EDITORIAL schema (human-curated, NOT pipeline data)
 -- ============================================================
--- These tables hold content the MLB API can't provide: media archive entries,
--- "Today in Mets History" narrative blurbs, and the weekly Trending list.
+-- These tables hold content the MLB API can't provide: "Today in Mets History"
+-- narrative blurbs and the (fallback) Trending list.
 --
--- They are intentionally in a separate file from schema.sql. The daily pipeline
--- role (mets_pipeline) is NEVER granted write on them (see roles.sql), so an
--- automated run cannot overwrite human-entered content. They are populated by
--- seed_editorial.py and edited by hand.
+-- The daily pipeline role (mets_pipeline) is NEVER granted write on them (see
+-- roles.sql), so an automated run cannot overwrite human-entered content. They
+-- are populated by seed_editorial.py and edited by hand.
+--
+-- NOTE: media_items moved to schema.sql — real game highlights ARE available from
+-- the MLB content API, so media is now auto-ingested (ingest_media.py).
 
 -- "Today in Mets History" — the narrative text for a calendar date. The event
 -- skeleton (which game happened on this date) is derived from the games table at
@@ -34,20 +36,4 @@ CREATE TABLE IF NOT EXISTS trending (
     updated_at  TIMESTAMPTZ DEFAULT now()
 );
 
--- Media archive (videos / photos / articles / podcasts).
-CREATE TABLE IF NOT EXISTS media_items (
-    id           SERIAL PRIMARY KEY,
-    media_type   TEXT,               -- 'video' | 'photo' | 'article' | 'audio'
-    title        TEXT,
-    description  TEXT,
-    era          TEXT,
-    season       INTEGER,
-    player_name  TEXT,
-    source       TEXT,
-    url          TEXT,
-    published_at TEXT,
-    featured     BOOLEAN DEFAULT false,
-    updated_at   TIMESTAMPTZ DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS idx_media_type   ON media_items (media_type);
-CREATE INDEX IF NOT EXISTS idx_media_season ON media_items (season);
+-- (media_items lives in schema.sql now — see note above.)
