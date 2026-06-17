@@ -124,6 +124,35 @@ export async function getPlayers(search?: string, limit = 1000): Promise<Player[
   );
 }
 
+export interface PlayerRow extends Player {
+  position_type: string | null;
+  bat_avg: string | null;
+  bat_hr: number | null;
+  bat_rbi: number | null;
+  bat_games: number | null;
+  era: string | null;
+  wins: number | null;
+  losses: number | null;
+  pit_so: number | null;
+  pit_games: number | null;
+}
+
+/**
+ * Full roster directory joined to career batting & pitching totals — for the
+ * data-dense Players page (summary, filters, sort, per-card stats).
+ */
+export async function getPlayersWithStats(): Promise<PlayerRow[]> {
+  return query<PlayerRow>(`
+    SELECT d.*,
+      cb.avg AS bat_avg, cb.home_runs AS bat_hr, cb.rbi AS bat_rbi, cb.games AS bat_games,
+      cp.era, cp.wins, cp.losses, cp.strike_outs AS pit_so, cp.games AS pit_games
+    FROM v_player_directory d
+    LEFT JOIN v_player_career_batting  cb USING (player_id)
+    LEFT JOIN v_player_career_pitching cp USING (player_id)
+    ORDER BY d.full_name
+  `);
+}
+
 export async function getPlayer(playerId: number): Promise<Player | null> {
   const rows = await query<Player>(
     `SELECT * FROM players WHERE player_id = $1`,
