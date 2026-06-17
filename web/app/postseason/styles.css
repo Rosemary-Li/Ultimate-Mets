@@ -29,76 +29,210 @@
   font-weight: 600;
 }
 
-/* season appearance card */
-.route-postseason .ps-card {
+/* ===== summary strip ===== */
+.route-postseason .ps-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0 14px;
+}
+.route-postseason .ps-stat {
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  flex: 1;
+  padding: 12px 16px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 18px;
-  margin: 14px 0;
-  transition: all 0.15s;
+  border-radius: 10px;
 }
-.route-postseason .ps-card:hover {
-  border-color: var(--mets-orange);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-}
-.route-postseason .ps-yr {
-  font-size: 20px;
+.route-postseason .ps-stat-num {
+  font-family: var(--num-font);
+  font-size: 24px;
   font-weight: 800;
+  line-height: 1;
   color: var(--mets-blue);
 }
-.route-postseason .ps-outcome {
-  font-size: 12px;
-  font-weight: 700;
+.route-postseason .ps-stat-lbl {
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 3px 10px;
-  border-radius: 12px;
-  margin-left: 10px;
+  color: var(--text-muted);
+  margin-top: 5px;
 }
-.route-postseason .ps-outcome.champ {
+
+/* ===== legend ===== */
+.route-postseason .ps-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 4px 0 16px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.route-postseason .ps-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.route-postseason .ps-legend .sw {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.route-postseason .ps-legend .sw.champ {
+  background: #f59e0b;
+}
+.route-postseason .ps-legend .sw.pennant {
+  background: var(--mets-blue);
+}
+.route-postseason .ps-legend .sw.nlcs {
+  background: #94a3b8;
+}
+.route-postseason .ps-legend .sw.nlds {
+  background: #cbd5e1;
+}
+.route-postseason .ps-legend .sw.wc {
+  background: #e5e7eb;
+}
+
+/* ===== dense tiered year rows ===== */
+.route-postseason .ps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+.route-postseason .ps-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 16px;
+  transition: all 0.12s;
+}
+.route-postseason .ps-row:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+  border-color: var(--mets-orange);
+}
+.route-postseason .ps-row-yr {
+  font-family: var(--num-font);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--mets-blue);
+  width: 58px;
+  flex-shrink: 0;
+}
+.route-postseason .ps-tier {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 11px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.route-postseason .ps-trophy {
+  font-size: 13px;
+}
+/* tier accents on the row left border + tier badge */
+.route-postseason .ps-row.tier-champ {
+  border-left-color: #f59e0b;
+  background: linear-gradient(90deg, #fffbeb, var(--surface) 60%);
+}
+.route-postseason .ps-row.tier-pennant {
+  border-left-color: var(--mets-blue);
+}
+.route-postseason .ps-row.tier-nlcs {
+  border-left-color: #94a3b8;
+}
+.route-postseason .ps-tier.tier-champ {
   background: #fef3c7;
   color: #b45309;
 }
-.route-postseason .ps-outcome.out {
+.route-postseason .ps-tier.tier-pennant {
+  background: #e0e7ff;
+  color: #1e3a8a;
+}
+.route-postseason .ps-tier.tier-nlcs {
+  background: #f1f5f9;
+  color: #475569;
+}
+.route-postseason .ps-tier.tier-nlds {
   background: #f3f4f6;
+  color: #64748b;
+}
+.route-postseason .ps-tier.tier-wc {
+  background: #f9fafb;
   color: var(--text-muted);
 }
-.route-postseason .ps-rounds {
+
+/* progression ladder */
+.route-postseason .ps-ladder {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
 }
-.route-postseason .ps-round {
-  font-size: 12.5px;
+.route-postseason .ps-step-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.route-postseason .ps-arrow {
+  color: var(--text-light);
+  font-size: 15px;
+  margin: 0 3px;
+}
+.route-postseason .ps-step {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
   font-family: var(--num-font);
-  padding: 5px 11px;
-  border-radius: 8px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 7px;
   border: 1px solid var(--border);
 }
-.route-postseason .ps-round.w {
-  border-color: #a7f3d0;
-  background: #ecfdf5;
-}
-.route-postseason .ps-round.l {
-  border-color: #fecaca;
-  background: #fef2f2;
-}
-.route-postseason .ps-round .lbl {
+.route-postseason .ps-step-lbl {
   font-family: "Inter", sans-serif;
   font-weight: 600;
   color: var(--text);
 }
-.route-postseason .ps-round .rec {
+.route-postseason .ps-step-rec {
   font-weight: 700;
-  margin-left: 6px;
 }
-.route-postseason .ps-round.w .rec {
+.route-postseason .ps-step.w {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+.route-postseason .ps-step.w .ps-step-rec {
   color: var(--c-games);
 }
-.route-postseason .ps-round.l .rec {
+.route-postseason .ps-step.l {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+.route-postseason .ps-step.l .ps-step-rec {
   color: #dc2626;
+}
+.route-postseason .ps-step.gold {
+  border-color: #fcd34d;
+  background: #fef3c7;
+}
+.route-postseason .ps-step.gold .ps-step-lbl,
+.route-postseason .ps-step.gold .ps-step-rec {
+  color: #b45309;
 }
 
 /* detail game log */

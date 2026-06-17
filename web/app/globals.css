@@ -132,6 +132,13 @@ a {
   border-top: 1px solid var(--border);
   text-align: center;
 }
+.footer a {
+  color: var(--mets-orange);
+  font-weight: 600;
+}
+.footer a:hover {
+  text-decoration: underline;
+}
 
 /* ---------------- Cross-page helpers (clickable names/rows/cards) ----- */
 .linkable {

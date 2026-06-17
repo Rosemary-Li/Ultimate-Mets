@@ -11,17 +11,26 @@ const SHORT: Record<string, string> = {
   W: "World Series",
 };
 
-function outcome(series: PostseasonSeries[]): { label: string; champ: boolean } {
+type Tier = "champ" | "pennant" | "nlcs" | "nlds" | "wc";
+
+const TIER_LABEL: Record<Tier, string> = {
+  champ: "World Series Champions",
+  pennant: "NL Champions",
+  nlcs: "Lost in NLCS",
+  nlds: "Lost in NLDS",
+  wc: "Lost in Wild Card",
+};
+
+/** Infer how far a postseason run got from the series actually played. */
+function classify(series: PostseasonSeries[]): Tier {
   const ws = series.find((s) => s.game_type === "W");
-  if (ws && ws.mets_wins > ws.mets_losses)
-    return { label: "World Series Champions", champ: true };
-  const last = series[series.length - 1];
-  if (last && last.mets_wins > last.mets_losses && last.game_type === "L")
-    return { label: "NL Pennant", champ: true };
-  return {
-    label: last ? `Eliminated in ${SHORT[last.game_type] ?? "playoffs"}` : "—",
-    champ: false,
-  };
+  if (ws) return ws.mets_wins > ws.mets_losses ? "champ" : "pennant";
+  const deepest = series.reduce((a, b) =>
+    (b.round_order ?? 0) > (a.round_order ?? 0) ? b : a,
+  );
+  if (deepest.game_type === "L") return "nlcs";
+  if (deepest.game_type === "D") return "nlds";
+  return "wc";
 }
 
 export default async function PostseasonIndexPage() {
@@ -34,11 +43,37 @@ export default async function PostseasonIndexPage() {
   }
   const seasons = [...bySeason.keys()].sort((a, b) => b - a);
 
+  // ----- franchise postseason summary -----
+  let titles = 0;
+  let pennants = 0;
+  let wins = 0;
+  let losses = 0;
+  for (const s of all) {
+    wins += Number(s.mets_wins);
+    losses += Number(s.mets_losses);
+  }
+  for (const yr of seasons) {
+    const t = classify(bySeason.get(yr)!);
+    if (t === "champ") {
+      titles++;
+      pennants++;
+    } else if (t === "pennant") {
+      pennants++;
+    }
+  }
+
+  const SUMMARY = [
+    { num: seasons.length, label: "Appearances" },
+    { num: titles, label: "World Series Titles" },
+    { num: pennants, label: "NL Pennants" },
+    { num: `${wins}–${losses}`, label: "Postseason Record" },
+  ];
+
   return (
     <div className="ps-wrap">
       <h1 className="ps-page-title">Postseason</h1>
       <p className="ps-page-sub">
-        Every Mets postseason run in the database — series by series.
+        Every Mets October run — how far each team got, series by series.
       </p>
 
       {seasons.length === 0 ? (
@@ -47,33 +82,76 @@ export default async function PostseasonIndexPage() {
           postseason date range).
         </div>
       ) : (
-        seasons.map((yr) => {
-          const series = bySeason.get(yr)!;
-          const o = outcome(series);
-          return (
-            <Link key={yr} href={`/postseason/${yr}`} className="ps-card" style={{ display: "block" }}>
-              <div>
-                <span className="ps-yr">{yr}</span>
-                <span className={`ps-outcome ${o.champ ? "champ" : "out"}`}>
-                  {o.label}
-                </span>
+        <>
+          {/* summary strip */}
+          <div className="ps-summary">
+            {SUMMARY.map((s) => (
+              <div key={s.label} className="ps-stat">
+                <span className="ps-stat-num">{s.num}</span>
+                <span className="ps-stat-lbl">{s.label}</span>
               </div>
-              <div className="ps-rounds">
-                {series.map((s) => {
-                  const won = s.mets_wins > s.mets_losses;
-                  return (
-                    <span key={s.game_type} className={`ps-round ${won ? "w" : "l"}`}>
-                      <span className="lbl">{SHORT[s.game_type] ?? s.game_type}</span>
-                      <span className="rec">
-                        {s.mets_wins}–{s.mets_losses}
-                      </span>
-                    </span>
-                  );
-                })}
-              </div>
-            </Link>
-          );
-        })
+            ))}
+          </div>
+
+          {/* legend */}
+          <div className="ps-legend">
+            <span><i className="sw champ" /> Champions</span>
+            <span><i className="sw pennant" /> NL Pennant</span>
+            <span><i className="sw nlcs" /> NLCS</span>
+            <span><i className="sw nlds" /> NLDS</span>
+            <span><i className="sw wc" /> Wild Card</span>
+          </div>
+
+          {/* dense, tiered year list */}
+          <div className="ps-list">
+            {seasons.map((yr) => {
+              const series = bySeason
+                .get(yr)!
+                .slice()
+                .sort((a, b) => (a.round_order ?? 0) - (b.round_order ?? 0));
+              const tier = classify(series);
+              const champ = tier === "champ";
+              return (
+                <Link
+                  key={yr}
+                  href={`/postseason/${yr}`}
+                  className={`ps-row tier-${tier}`}
+                >
+                  <span className="ps-row-yr">{yr}</span>
+                  <span className={`ps-tier tier-${tier}`}>
+                    {champ && <span className="ps-trophy">🏆</span>}
+                    {TIER_LABEL[tier]}
+                  </span>
+
+                  {/* progression ladder — only rounds actually played */}
+                  <span className="ps-ladder">
+                    {series.map((s, i) => {
+                      const won = s.mets_wins > s.mets_losses;
+                      const isChampWs = champ && s.game_type === "W";
+                      return (
+                        <span key={s.game_type} className="ps-step-wrap">
+                          {i > 0 && <span className="ps-arrow">›</span>}
+                          <span
+                            className={`ps-step ${won ? "w" : "l"} ${
+                              isChampWs ? "gold" : ""
+                            }`}
+                          >
+                            <span className="ps-step-lbl">
+                              {SHORT[s.game_type] ?? s.game_type}
+                            </span>
+                            <span className="ps-step-rec">
+                              {s.mets_wins}–{s.mets_losses}
+                            </span>
+                          </span>
+                        </span>
+                      );
+                    })}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
