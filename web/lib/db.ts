@@ -489,13 +489,47 @@ export interface CareerBatting {
   slg: string | null;
 }
 
-/** Career batting totals for a set of players (for the Lab comparison). */
+/**
+ * Career batting totals for a set of players (for the Lab comparison).
+ * Reads the LIVE view (not the materialized leaderboard) so added players show
+ * current data immediately, even while a backfill is running.
+ */
 export async function getCareerBattingForPlayers(
   ids: number[],
 ): Promise<CareerBatting[]> {
   if (ids.length === 0) return [];
   return query<CareerBatting>(
-    `SELECT * FROM mv_career_batting_leaders WHERE player_id = ANY($1::bigint[])`,
+    `SELECT cb.*, pl.full_name, pl.primary_position
+     FROM v_player_career_batting cb JOIN players pl USING (player_id)
+     WHERE cb.player_id = ANY($1::bigint[])`,
+    [ids],
+  );
+}
+
+export interface CareerPitching {
+  player_id: number;
+  full_name: string | null;
+  primary_position: string | null;
+  seasons: number;
+  games: number;
+  innings_pitched: string | null;
+  earned_runs: number;
+  strike_outs: number;
+  wins: number;
+  losses: number;
+  saves: number;
+  era: string | null;
+}
+
+/** Career pitching totals for a set of players (live view). */
+export async function getCareerPitchingForPlayers(
+  ids: number[],
+): Promise<CareerPitching[]> {
+  if (ids.length === 0) return [];
+  return query<CareerPitching>(
+    `SELECT cp.*, pl.full_name, pl.primary_position
+     FROM v_player_career_pitching cp JOIN players pl USING (player_id)
+     WHERE cp.player_id = ANY($1::bigint[])`,
     [ids],
   );
 }
