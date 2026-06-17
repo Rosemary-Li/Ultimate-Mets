@@ -73,6 +73,54 @@
   padding: 16px;
   margin: 18px 0;
 }
+.route-seasons .se-chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.route-seasons .se-chart-head h2 {
+  font-size: 15px;
+  font-weight: 800;
+}
+.route-seasons .se-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.route-seasons .se-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.route-seasons .se-legend .sw {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.route-seasons .se-legend .sw.blue { background: #002d72; }
+.route-seasons .se-legend .sw.orange { background: #ff5910; }
+.route-seasons .se-legend .sw.gold { background: #f59e0b; }
+.route-seasons .se-legend .sw.line {
+  width: 14px;
+  height: 0;
+  border-radius: 0;
+  border-top: 2px dashed #9ca3af;
+}
+.route-seasons .se-inprog {
+  color: var(--mets-orange);
+  font-weight: 800;
+}
+.route-seasons .se-foot {
+  font-size: 11.5px;
+  color: var(--text-light);
+  margin: -16px 0 32px;
+}
 
 /* season index table */
 .route-seasons .se-table-wrap {

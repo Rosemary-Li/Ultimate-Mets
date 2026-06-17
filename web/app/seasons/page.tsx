@@ -56,6 +56,22 @@ export default async function SeasonsIndexPage() {
   }
   const labelFor = (yr: number) => playoffLabel(psBySeason.get(yr) ?? []);
 
+  // bar color by achievement: WS champ = gold, other postseason = orange,
+  // regular season = blue.
+  const BAR_BLUE = "#002D72";
+  const BAR_ORANGE = "#FF5910";
+  const BAR_GOLD = "#F59E0B";
+  const colorFor = (yr: number) => {
+    const ser = psBySeason.get(yr) ?? [];
+    if (ser.length === 0) return BAR_BLUE;
+    const ws = ser.find((s) => s.game_type === "W");
+    if (ws && ws.mets_wins > ws.mets_losses) return BAR_GOLD;
+    return BAR_ORANGE;
+  };
+
+  const chronological = [...seasons].reverse();
+  const currentYear = new Date().getFullYear();
+
   const franW = Number(fran?.wins ?? 0);
   const franL = Number(fran?.losses ?? 0);
   const franRecord =
@@ -103,13 +119,27 @@ export default async function SeasonsIndexPage() {
       ) : (
         <>
           <div className="se-chart-card">
+            <div className="se-chart-head">
+              <h2>Wins by Season</h2>
+              <div className="se-legend">
+                <span><i className="sw blue" /> Season</span>
+                <span><i className="sw orange" /> Postseason</span>
+                <span><i className="sw gold" /> WS Champions</span>
+                <span><i className="sw line" /> .500 (81 W)</span>
+              </div>
+            </div>
             <ChartView
               type="bar"
               height={220}
-              labels={[...seasons].reverse().map((s) => s.season)}
+              labels={chronological.map((s) => s.season)}
               datasets={[
-                { label: "Wins", data: [...seasons].reverse().map((s) => s.wins) },
+                {
+                  label: "Wins",
+                  data: chronological.map((s) => s.wins),
+                  colors: chronological.map((s) => colorFor(s.season)),
+                },
               ]}
+              baseline={{ value: 81, label: ".500" }}
             />
           </div>
           <div className="se-table-wrap">
@@ -136,6 +166,11 @@ export default async function SeasonsIndexPage() {
                       <Link href={`/seasons/${s.season}`} className="se-yr">
                         {s.season}
                       </Link>
+                      {s.season === currentYear && (
+                        <span className="se-inprog" title="Season in progress">
+                          {" "}*
+                        </span>
+                      )}
                     </td>
                     <td>{s.wins ?? "—"}</td>
                     <td>{s.losses ?? "—"}</td>
@@ -156,6 +191,9 @@ export default async function SeasonsIndexPage() {
               </tbody>
             </table>
           </div>
+          {seasons.some((s) => s.season === currentYear) && (
+            <p className="se-foot">* {currentYear} season in progress — record &amp; attendance are partial.</p>
+          )}
         </>
       )}
     </div>
