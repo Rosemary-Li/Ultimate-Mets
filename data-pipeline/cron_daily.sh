@@ -8,7 +8,7 @@
 export PATH="/opt/homebrew/bin:/Library/Frameworks/Python.framework/Versions/3.12/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 export DATABASE_URL="postgresql://localhost:5432/ultimate_mets"
 
-DIR="/Users/rosemary/Desktop/Ultimate Mets/Ultimate Mets/data-pipeline"
+DIR="/Users/rosemary/Code/ultimate-mets/data-pipeline"
 LOGDIR="$DIR/logs"
 mkdir -p "$LOGDIR"
 cd "$DIR" || exit 1
@@ -23,4 +23,4 @@ LOG="$LOGDIR/daily-$(date '+%Y-%m').log"
 } >> "$LOG" 2>&1
 
 # ── crontab entry (runs daily at 08:00 local) ──────────────────────────────
-#   0 8 * * * "/Users/rosemary/Desktop/Ultimate Mets/Ultimate Mets/data-pipeline/cron_daily.sh"
+#   0 8 * * * "/Users/rosemary/Code/ultimate-mets/data-pipeline/cron_daily.sh"

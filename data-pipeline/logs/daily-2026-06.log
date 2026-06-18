@@ -95,3 +95,63 @@ REFRESH MATERIALIZED VIEW
 >> done (all stages ok)
 ===== run_daily end   2026-06-17 12:58:01 EDT (exit 0) =====
 
+===== run_daily start 2026-06-17 22:39:37 EDT =====
+>> games
+2026-06-17 22:39:37  INFO     Backfill range 2026-06-15 ~ 2026-06-17  ->  postgresql://localhost:5432/ultimate_mets
+2026-06-17 22:39:37  INFO     GET https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=121&startDate=2026-06-15&endDate=2026-06-17&hydrate=team%2Cvenue%2Clinescore%2CgameInfo
+2026-06-17 22:39:37  INFO     Done: wrote/updated 3 games (3 returned by API)
+>> boxscores
+2026-06-17 22:39:37  INFO     Ingesting boxscores for 2026-06-15 ~ 2026-06-17 -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 22:39:37  INFO     3 finished games to process
+2026-06-17 22:39:38  INFO     Done: 63 batting lines, 22 pitching lines
+>> linescores
+2026-06-17 22:39:38  INFO     Ingesting linescores for 2026-06-15 ~ 2026-06-17 -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 22:39:38  INFO     3 finished games to process
+2026-06-17 22:39:38  INFO     Done: 27 inning rows
+>> media
+2026-06-17 22:39:39  INFO     Ingesting media highlights for 2026-06-13 ~ 2026-06-17 -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 22:39:39  INFO     5 games to scan for highlights
+2026-06-17 22:39:40  INFO     Done: 35 media items
+>> players
+2026-06-17 22:39:40  INFO     Ingesting players for seasons [2026] -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 22:39:40  INFO     Collected 48 unique person ids; fetching bios...
+2026-06-17 22:39:40  INFO     Done: wrote/updated 48 players
+>> standings
+2026-06-17 22:39:41  INFO     Ingesting standings for 1 season(s) -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 22:39:41  INFO     Done: wrote/updated 1 seasons
+>> refresh leaderboards
+REFRESH MATERIALIZED VIEW
+REFRESH MATERIALIZED VIEW
+>> done (all stages ok)
+===== run_daily end   2026-06-17 22:39:41 EDT (exit 0) =====
+
+===== run_daily start 2026-06-17 22:42:00 EDT =====
+>> games
+2026-06-17 22:42:00  INFO     Backfill range 2026-06-15 ~ 2026-06-17  ->  postgresql://localhost:5432/ultimate_mets
+2026-06-17 22:42:00  INFO     GET https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=121&startDate=2026-06-15&endDate=2026-06-17&hydrate=team%2Cvenue%2Clinescore%2CgameInfo
+2026-06-17 22:42:00  INFO     Done: wrote/updated 3 games (3 returned by API)
+>> boxscores
+2026-06-17 22:42:01  INFO     Ingesting boxscores for 2026-06-15 ~ 2026-06-17 -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 22:42:01  INFO     3 finished games to process
+2026-06-17 22:42:01  INFO     Done: 63 batting lines, 22 pitching lines
+>> linescores
+2026-06-17 22:42:01  INFO     Ingesting linescores for 2026-06-15 ~ 2026-06-17 -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 22:42:01  INFO     3 finished games to process
+2026-06-17 22:42:02  INFO     Done: 27 inning rows
+>> media
+2026-06-17 22:42:02  INFO     Ingesting media highlights for 2026-06-13 ~ 2026-06-17 -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 22:42:02  INFO     5 games to scan for highlights
+2026-06-17 22:42:04  INFO     Done: 35 media items
+>> players
+2026-06-17 22:42:05  INFO     Ingesting players for seasons [2026] -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 22:42:05  INFO     Collected 48 unique person ids; fetching bios...
+2026-06-17 22:42:06  INFO     Done: wrote/updated 48 players
+>> standings
+2026-06-17 22:42:06  INFO     Ingesting standings for 1 season(s) -> postgresql://localhost:5432/ultimate_mets
+2026-06-17 22:42:06  INFO     Done: wrote/updated 1 seasons
+>> refresh leaderboards
+REFRESH MATERIALIZED VIEW
+REFRESH MATERIALIZED VIEW
+>> done (all stages ok)
+===== run_daily end   2026-06-17 22:42:06 EDT (exit 0) =====
+
