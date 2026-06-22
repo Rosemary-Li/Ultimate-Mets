@@ -27,7 +27,7 @@ Data source is the MLB Stats API only (free, no key). Baseball-Reference is neve
 | `seed_editorial.py` | seed data → editorial tables (manual / occasional) |
 | `_common.py` | shared API-fetch + Postgres-connect helpers |
 | `run_daily.sh` | runs all stat loaders in order, then refreshes materialized views |
-| `Dockerfile` | container for a Cloud Run Job (see ../DEPLOY.md) |
+| `Dockerfile` | container for a Cloud Run Job (see ../docs/DEPLOY.md) |
 
 ## 1. Set up Postgres
 
@@ -99,4 +99,4 @@ Cron (3 AM Eastern, after West Coast night games finish):
 ## 5. Cloud
 
 Point `DATABASE_URL` at managed Postgres (Cloud SQL/RDS/Neon/…) and run the pipeline as
-a Cloud Run Job on a Cloud Scheduler trigger. See [../DEPLOY.md](../DEPLOY.md).
+a Cloud Run Job on a Cloud Scheduler trigger. See [../docs/DEPLOY.md](../docs/DEPLOY.md).

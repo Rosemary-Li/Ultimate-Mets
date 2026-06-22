@@ -88,4 +88,4 @@ score), leaders, postseason, media, and the Lab comparison. The database current
   properly typed; some leftover prototype helpers aren't. Tighten and re-enable when
   convenient.
 - `output: "standalone"` is set for containerized deploys; see `Dockerfile` and
-  [../DEPLOY.md](../DEPLOY.md).
+  [../docs/DEPLOY.md](../docs/DEPLOY.md).

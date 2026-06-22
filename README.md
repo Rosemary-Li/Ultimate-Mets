@@ -1,9 +1,27 @@
 # Ultimate Mets Database
 
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Cloud Run](https://img.shields.io/badge/Google%20Cloud%20Run-deployed-4285F4?logo=googlecloud&logoColor=white)
+
 A New York Mets stats and history site: a full-stack web app backed by a data
 pipeline that ingests live data from the official MLB Stats API into PostgreSQL,
 updated daily. Every player, season, game, and postseason moment — searchable,
 comparable, connected, and open for discussion once you sign in.
+
+**Docs:** [Deployment guide](docs/DEPLOY.md) · [Web app](web/README.md) · [Data pipeline](data-pipeline/README.md)
+
+## Contents
+
+- [Architecture](#architecture)
+- [What's wired](#whats-wired)
+- [Schema & database roles](#schema--database-roles)
+- [Quick start](#quick-start)
+- [Keeping it updated (automation)](#keeping-it-updated-automation)
+- [Tech stack](#tech-stack)
 
 ## Architecture
 
@@ -17,7 +35,8 @@ MLB Stats API ──► data-pipeline (Python) ──► PostgreSQL ──► we
 .
 ├── web/             Next.js (App Router, TypeScript) front-end + back-end + auth
 ├── data-pipeline/   Python ETL that ingests MLB data into PostgreSQL (daily)
-└── DEPLOY.md        Google Cloud deployment guide
+├── .github/         CI/CD — GitHub Actions auto-deploys to Cloud Run on push
+└── docs/            Deployment guide (Google Cloud)
 ```
 
 The parts share one PostgreSQL database: the pipeline writes the stats domain, the web
@@ -108,7 +127,7 @@ Two design details make this airtight:
 
 For local development against a superuser `DATABASE_URL`, the roles are optional — they're
 a production hardening step. In production, give each service its own role-scoped
-`DATABASE_URL` (see [DEPLOY.md](DEPLOY.md)).
+`DATABASE_URL` (see [docs/DEPLOY.md](docs/DEPLOY.md)).
 
 ## Quick start
 
@@ -173,7 +192,7 @@ database is empty or unavailable, the site still renders — data-backed section
 rather than crashing.
 
 See [web/README.md](web/README.md) and [data-pipeline/README.md](data-pipeline/README.md)
-for details, and [DEPLOY.md](DEPLOY.md) for Google Cloud deployment.
+for details, and [docs/DEPLOY.md](docs/DEPLOY.md) for Google Cloud deployment.
 
 ## Keeping it updated (automation)
 
@@ -207,7 +226,7 @@ crontab -e
 
 **Production — Cloud Scheduler.** The pipeline is containerized (`data-pipeline/Dockerfile`,
 `CMD bash run_daily.sh`) and deployed as a Cloud Run **Job**, triggered daily by Cloud
-Scheduler. See [DEPLOY.md](DEPLOY.md).
+Scheduler. See [docs/DEPLOY.md](docs/DEPLOY.md).
 
 A separate one-off `backfill_history.sh` loads the full 1962–2026 box-score history (~10k API
 calls) and is **not** part of the daily schedule.

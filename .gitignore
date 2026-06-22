@@ -1,5 +1,8 @@
 .DS_Store
 
+# Editor / IDE
+.vscode/
+
 # GCP service-account keys — never commit
 gcp-key.json
 key.json
