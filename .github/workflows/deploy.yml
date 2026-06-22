@@ -2,12 +2,12 @@ name: Build and Deploy to Cloud Run
 
 on:
   push:
-    branches: [ "main" ] # 只有 push 到 main 分支时触发
+    branches: [ "main" ] # only trigger on push to the main branch
 
 env:
   PROJECT_ID: ultimate-mets
   REGION: us-east1
-  REPOSITORY: ultimate-mets-repo # Artifact Registry 仓库名
+  REPOSITORY: ultimate-mets-repo # Artifact Registry repository name
 
 jobs:
   deploy:
@@ -16,22 +16,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. 登录 Google Cloud
+      # 1. Authenticate to Google Cloud
       - name: Google Auth
         uses: 'google-github-actions/auth@v2'
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      # 2. 设置 gcloud CLI
+      # 2. Set up the gcloud CLI
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v2'
 
-      # 3. 配置 Docker 认证
+      # 3. Configure Docker authentication
       - name: 'Docker Auth'
         run: |-
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-      # --- 部署 Web 网站 ---
+      # --- Deploy the web app ---
       - name: Build and Push Web Image
         run: |-
           docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/web:${{ github.sha }} ./web
@@ -46,7 +46,7 @@ jobs:
             --add-cloudsql-instances ${{ env.PROJECT_ID }}:${{ env.REGION }}:mets-pg \
             --set-secrets DATABASE_URL=DATABASE_URL:latest
 
-      # --- 部署 Data Pipeline Job ---
+      # --- Deploy the data pipeline job ---
       - name: Build and Push Pipeline Image
         run: |-
           docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/pipeline:${{ github.sha }} ./data-pipeline
