@@ -5,6 +5,7 @@ import {
   getSiteStats,
   getMediaCount,
   getLeaders,
+  getCurrentPlayers,
   getAutoTrending,
   getSeasons,
   getTodayEditorial,
@@ -43,10 +44,11 @@ export default async function HomePage() {
   const month = now.getMonth() + 1;
   const day = now.getDate();
 
-  const [recent, hrLeaders, stats, mediaCount, trending, seasons, editorial, anniv] =
+  const [recent, hrLeaders, currentFaces, stats, mediaCount, trending, seasons, editorial, anniv] =
     await Promise.all([
       getRecentGames(11),
       getLeaders({ scope: "career", type: "batting", stat: "home_runs", limit: 6 }),
+      getCurrentPlayers(6),
       getSiteStats(),
       getMediaCount(),
       getAutoTrending(),
@@ -106,7 +108,7 @@ export default async function HomePage() {
             </p>
           </div>
           <div className="hm-faces">
-            {hrLeaders.map((l) => (
+            {currentFaces.map((l) => (
               <Link key={l.player_id} href={`/players/${l.player_id}`} title={l.full_name ?? ""}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={photoOf(l)} alt={l.full_name ?? ""} />

@@ -179,6 +179,23 @@ export async function getPlayers(search?: string, limit = 1000): Promise<Player[
   );
 }
 
+/**
+ * Current-season roster, everyday players first (most career games batting → the
+ * recognizable regulars, not bench arms), and only those with a real photo — for
+ * the home hero face band.
+ */
+export async function getCurrentPlayers(limit = 6): Promise<Player[]> {
+  return query<Player>(
+    `SELECT d.*
+     FROM v_player_directory d
+     LEFT JOIN v_player_career_batting cb USING (player_id)
+     WHERE d.is_current AND d.photo_url IS NOT NULL
+     ORDER BY COALESCE(cb.games, 0) DESC, d.full_name
+     LIMIT $1`,
+    [limit],
+  );
+}
+
 export interface PlayerRow extends Player {
   position_type: string | null;
   bat_avg: string | null;
