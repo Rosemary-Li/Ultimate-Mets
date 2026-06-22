@@ -70,6 +70,46 @@ Every page reads from the database:
 | Sign in (Google / email magic link) + account menu | `users`, `accounts`, `sessions` (Auth.js) |
 | Discussion (comment threads on game / player / season pages) | `comments` |
 
+## Schema & database roles
+
+The schema is split into files by **who owns the data**, so privileges can be granted
+per domain rather than all-or-nothing:
+
+| File | Creates | Owned/written by |
+|---|---|---|
+| `schema.sql` | Auto-data tables: `games`, `players`, `batting_stats`, `pitching_stats`, `team_season`, `game_linescore` (+ `media_items`) | the pipeline |
+| `schema_editorial.sql` | Editorial tables: `today_in_history`, `trending` | a human editor |
+| `schema_app.sql` | User-generated tables: `users`, `accounts`, `sessions`, `verification_token` (Auth.js), `comments` — **and** the `mets_app` role | the web app |
+| `views.sql` | Read-only views + materialized leaderboard caches | derived (no owner) |
+| `roles.sql` | The `mets_pipeline` / `mets_web` / `mets_editor` roles + their grants | run once as superuser |
+
+### Four least-privilege roles
+
+Privilege isolation is a **mechanism, not a convention** — the grants are enforced by
+Postgres, so a buggy or compromised component physically cannot write outside its domain:
+
+| Role | Can read | Can write | Connect as |
+|---|---|---|---|
+| `mets_pipeline` | auto-data tables | auto-data tables **only** | the daily ingest job |
+| `mets_editor` | editorial tables | editorial tables **only** | one-off editorial seeding |
+| `mets_web` | everything | nothing (read-only) | — |
+| `mets_app` | everything (stats + views) | the user/comments tables **only** | the Next.js web app |
+
+Two design details make this airtight:
+
+- **Grants list tables explicitly**, never `GRANT ... ON ALL TABLES`. A blanket grant
+  would sweep editorial and user tables into the pipeline's permissions; listing each
+  table by name means `mets_pipeline` is *never* granted write on editorial or user
+  content. So a daily automated run cannot overwrite human-curated prose or user comments.
+- **`mets_app` is a superset of `mets_web`**: it can `SELECT` everything (to render every
+  page) but `INSERT/UPDATE/DELETE` only the five user-generated tables. It can read stats
+  but never write them. It is created inside `schema_app.sql` (rather than `roles.sql`)
+  because its grants depend on the user tables existing first.
+
+For local development against a superuser `DATABASE_URL`, the roles are optional — they're
+a production hardening step. In production, give each service its own role-scoped
+`DATABASE_URL` (see [DEPLOY.md](DEPLOY.md)).
+
 ## Quick start
 
 ### 0. PostgreSQL (shared by both parts)
@@ -89,12 +129,17 @@ psql "$DATABASE_URL" -f schema.sql
 psql "$DATABASE_URL" -f schema_editorial.sql
 psql "$DATABASE_URL" -f schema_app.sql      # accounts + comments + mets_app role
 psql "$DATABASE_URL" -f views.sql
+# Optional hardening — create the mets_pipeline/mets_web/mets_editor roles and lock
+# down privileges (run once as a superuser, after the tables/views above exist).
+# Not needed for local dev against a superuser DATABASE_URL; recommended in production.
+psql "$DATABASE_URL" -f roles.sql
 
 # Full-history backfill (idempotent — safe to re-run). See data-pipeline/README.md.
-python3 ingest_standings.py --start-season 1962 --end-season 2026
-python3 ingest_games.py     --start 1962-01-01 --end 2026-12-31
-python3 ingest_boxscores.py --start-season 1962 --end-season 2026
-python3 ingest_players.py   --start-season 1962 --end-season 2026
+python3 ingest_standings.py   --start-season 1962 --end-season 2026
+python3 ingest_games.py       --start 1962-01-01 --end 2026-12-31
+python3 ingest_boxscores.py   --start-season 1962 --end-season 2026
+python3 ingest_linescores.py  --season 2026   # per-inning runs (recent games carry linescores)
+python3 ingest_players.py     --start-season 1962 --end-season 2026
 python3 ingest_media.py
 python3 seed_editorial.py
 # ...then ./run_daily.sh keeps it current each day.

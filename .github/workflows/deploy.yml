@@ -1,0 +1,61 @@
+name: Build and Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ "main" ] # 只有 push 到 main 分支时触发
+
+env:
+  PROJECT_ID: ultimate-mets
+  REGION: us-east1
+  REPOSITORY: ultimate-mets-repo # Artifact Registry 仓库名
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. 登录 Google Cloud
+      - name: Google Auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      # 2. 设置 gcloud CLI
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      # 3. 配置 Docker 认证
+      - name: 'Docker Auth'
+        run: |-
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      # --- 部署 Web 网站 ---
+      - name: Build and Push Web Image
+        run: |-
+          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/web:${{ github.sha }} ./web
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/web:${{ github.sha }}
+
+      - name: Deploy Web to Cloud Run
+        run: |-
+          gcloud run deploy ultimate-mets-web \
+            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/web:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --allow-unauthenticated \
+            --add-cloudsql-instances ${{ env.PROJECT_ID }}:${{ env.REGION }}:mets-pg \
+            --set-secrets DATABASE_URL=DATABASE_URL:latest
+
+      # --- 部署 Data Pipeline Job ---
+      - name: Build and Push Pipeline Image
+        run: |-
+          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/pipeline:${{ github.sha }} ./data-pipeline
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/pipeline:${{ github.sha }}
+
+      - name: Deploy Cloud Run Job
+        run: |-
+          gcloud run jobs deploy mets-pipeline \
+            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/pipeline:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --add-cloudsql-instances ${{ env.PROJECT_ID }}:${{ env.REGION }}:mets-pg \
+            --set-secrets DATABASE_URL=DATABASE_URL:latest
