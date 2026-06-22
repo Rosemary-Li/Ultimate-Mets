@@ -57,5 +57,5 @@ jobs:
           gcloud run jobs deploy mets-pipeline \
             --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/pipeline:${{ github.sha }} \
             --region ${{ env.REGION }} \
-            --add-cloudsql-instances ${{ env.PROJECT_ID }}:${{ env.REGION }}:mets-pg \
+            --set-cloudsql-instances ${{ env.PROJECT_ID }}:${{ env.REGION }}:mets-pg \
             --set-secrets DATABASE_URL=DATABASE_URL:latest
