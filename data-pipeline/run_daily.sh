@@ -28,6 +28,7 @@ stage linescores  python3 ingest_linescores.py    # per-inning runs for recent f
 stage media       python3 ingest_media.py         # highlight/recap links (MLB.com)
 stage players     python3 ingest_players.py        # current-season roster + bios
 stage standings   python3 ingest_standings.py      # current-season standings line
+stage photos      python3 ingest_player_photos.py  # resolve photos for any new players (NULL photo_url only)
 
 echo ">> refresh leaderboards"
 psql "$DATABASE_URL" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_career_batting_leaders;"  || fail=1

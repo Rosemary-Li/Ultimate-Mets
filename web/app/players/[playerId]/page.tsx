@@ -7,7 +7,7 @@ import {
 } from "@/lib/db";
 import type { SeasonBatting, SeasonPitching } from "@/lib/types";
 import ChartView from "@/components/ChartView";
-import { headshotLarge } from "@/lib/images";
+import { photoOfLarge } from "@/lib/images";
 import Discussion from "@/components/Discussion";
 
 export const dynamic = "force-dynamic";
@@ -109,7 +109,7 @@ export default async function PlayerProfilePage({
         <div className="pl-hero-inner">
           <span className="pl-hero-photo">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={headshotLarge(id)} alt={player.full_name ?? ""} />
+            <img src={photoOfLarge(player)} alt={player.full_name ?? ""} />
           </span>
           <div className="pl-hero-id">
             {player.primary_number && (

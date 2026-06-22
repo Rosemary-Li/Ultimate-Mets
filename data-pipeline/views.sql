@@ -175,14 +175,14 @@ FROM players p;
 --
 -- (Dropped at the top of this file, before their dependency views.)
 CREATE MATERIALIZED VIEW mv_career_batting_leaders AS
-SELECT cb.*, pl.full_name, pl.primary_position
+SELECT cb.*, pl.full_name, pl.primary_position, pl.photo_url
 FROM v_player_career_batting cb
 JOIN players pl USING (player_id);
 -- unique index enables REFRESH MATERIALIZED VIEW CONCURRENTLY
 CREATE UNIQUE INDEX mv_cbl_pk ON mv_career_batting_leaders (player_id);
 
 CREATE MATERIALIZED VIEW mv_career_pitching_leaders AS
-SELECT cp.*, pl.full_name, pl.primary_position
+SELECT cp.*, pl.full_name, pl.primary_position, pl.photo_url
 FROM v_player_career_pitching cp
 JOIN players pl USING (player_id);
 CREATE UNIQUE INDEX mv_cpl_pk ON mv_career_pitching_leaders (player_id);

@@ -79,6 +79,8 @@ export interface Player {
   mlb_debut_date: string | null;
   name_slug: string | null;
   active: boolean | null;
+  // best real photo (MLB headshot or Wikimedia), resolved by ingest_player_photos.py
+  photo_url?: string | null;
   // present when listed via the directory view: appeared for the Mets in the
   // latest season in the DB.
   is_current?: boolean;

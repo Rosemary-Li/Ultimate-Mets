@@ -320,6 +320,7 @@ export interface LeaderRow {
   player_id: number;
   full_name: string | null;
   primary_position: string | null;
+  photo_url?: string | null;
   value: number | string | null;
 }
 
@@ -376,13 +377,13 @@ export async function getLeaders(opts: {
         ? "v_player_season_batting"
         : "v_player_season_pitching";
     params.push(season);
-    source = `(SELECT v.*, pl.full_name, pl.primary_position
+    source = `(SELECT v.*, pl.full_name, pl.primary_position, pl.photo_url
                FROM ${view} v JOIN players pl USING (player_id)
                WHERE v.season = $1) s`;
   }
 
   const where = qual ? `WHERE ${qual}` : "";
-  const sql = `SELECT player_id, full_name, primary_position, ${stat} AS value
+  const sql = `SELECT player_id, full_name, primary_position, photo_url, ${stat} AS value
                FROM ${source} ${where}
                ORDER BY ${stat} ${dir} NULLS LAST
                LIMIT ${Number(limit)}`;

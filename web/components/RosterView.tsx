@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { headshot } from "@/lib/images";
 import type { PlayerRow } from "@/lib/db";
 
 /* ---------- helpers ---------- */
@@ -73,18 +72,21 @@ function batThrow(p: PlayerRow): string {
 
 function Avatar({ p }: { p: PlayerRow }) {
   const [failed, setFailed] = useState(false);
+  // photo_url is the resolved real photo (MLB or Wikimedia); null means we found
+  // none anywhere, so show initials instead of MLB's grey silhouette.
+  const showPhoto = !!p.photo_url && !failed;
   return (
     <span className="pl-photo">
-      {failed ? (
-        <span className="pl-initials">{initials(p.full_name)}</span>
-      ) : (
+      {showPhoto ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={headshot(p.player_id)}
+          src={p.photo_url!}
           alt={p.full_name ?? ""}
           loading="lazy"
           onError={() => setFailed(true)}
         />
+      ) : (
+        <span className="pl-initials">{initials(p.full_name)}</span>
       )}
     </span>
   );

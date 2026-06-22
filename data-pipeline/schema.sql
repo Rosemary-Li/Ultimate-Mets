@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS players (
     mlb_debut_date   TEXT,
     name_slug        TEXT,
     active           BOOLEAN,
+    photo_url        TEXT,     -- best real photo: MLB headshot or Wikimedia (ingest_player_photos.py)
     updated_at       TIMESTAMPTZ DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_players_name ON players (full_name);

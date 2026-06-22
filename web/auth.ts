@@ -11,6 +11,9 @@ import { getPool } from "@/lib/db";
  * - Sessions + accounts persisted in Postgres via @auth/pg-adapter (shared pool)
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Cloud Run terminates TLS at a proxy; trust the forwarded host/proto so
+  // Auth.js builds correct callback URLs in production.
+  trustHost: true,
   adapter: PostgresAdapter(getPool()),
   providers: [
     Google,

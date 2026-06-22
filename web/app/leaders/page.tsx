@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getLeaders, getSeasons, type LeaderScope, type LeaderType } from "@/lib/db";
-import { headshot } from "@/lib/images";
+import { photoOf } from "@/lib/images";
 
 export const dynamic = "force-dynamic";
 
@@ -151,7 +151,7 @@ export default async function LeadersPage({
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         className="le-face"
-                        src={headshot(r.player_id)}
+                        src={photoOf(r)}
                         alt=""
                         loading="lazy"
                       />

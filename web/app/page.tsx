@@ -10,7 +10,7 @@ import {
   getTodayEditorial,
   getGameAnniversaries,
 } from "@/lib/db";
-import { headshot, teamLogo } from "@/lib/images";
+import { photoOf, teamLogo } from "@/lib/images";
 import type { Game } from "@/lib/types";
 import ChartView from "@/components/ChartView";
 
@@ -109,7 +109,7 @@ export default async function HomePage() {
             {hrLeaders.map((l) => (
               <Link key={l.player_id} href={`/players/${l.player_id}`} title={l.full_name ?? ""}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={headshot(l.player_id)} alt={l.full_name ?? ""} />
+                <img src={photoOf(l)} alt={l.full_name ?? ""} />
               </Link>
             ))}
           </div>
@@ -175,7 +175,7 @@ export default async function HomePage() {
                     <Link key={l.player_id} href={`/players/${l.player_id}`} className="hm-leader">
                       <span className="hm-rank">{i + 1}</span>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={headshot(l.player_id)} alt={l.full_name ?? ""} className="hm-face-sm" />
+                      <img src={photoOf(l)} alt={l.full_name ?? ""} className="hm-face-sm" />
                       <span className="hm-leader-name">{l.full_name}</span>
                       <span className="hm-leader-bar">
                         {/* gradient is sized to the full track so the orange

@@ -59,6 +59,10 @@ def fetch_schedule(start_date: str, end_date: str) -> dict:
         "teamId": METS_TEAM_ID,
         "startDate": start_date,
         "endDate": end_date,
+        # Regular season + every postseason round (F=Wild Card, D=Division,
+        # L=League Championship, W=World Series). Without this the API returns
+        # regular-season games only, so postseason never gets ingested.
+        "gameType": "R,F,D,L,W",
         "hydrate": "team,venue,linescore,gameInfo",
     })
     url = f"{API_BASE}/schedule?{params}"
