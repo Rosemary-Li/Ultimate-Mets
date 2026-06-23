@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { PlayerRow } from "@/lib/db";
+import ExportPanel from "@/components/ExportPanel";
 
 /* ---------- helpers ---------- */
 
@@ -221,6 +222,8 @@ export default function RosterView({ players }: { players: PlayerRow[] }) {
         <strong>career totals with the Mets</strong>, pulled from MLB and updated
         daily.
       </p>
+
+      <ExportPanel dataset="players" />
 
       {/* summary strip */}
       <div className="pl-summary">

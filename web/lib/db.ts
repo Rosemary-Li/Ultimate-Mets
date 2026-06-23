@@ -104,6 +104,30 @@ export async function getGamesBySeason(season: number): Promise<Game[]> {
   );
 }
 
+/** Games whose official date falls in [start, end] (YYYY-MM-DD) — for data export. */
+export async function getGamesByDateRange(start: string, end: string): Promise<Game[]> {
+  return query<Game>(
+    `SELECT * FROM games
+     WHERE official_date BETWEEN $1 AND $2
+     ORDER BY official_date, game_number`,
+    [start, end],
+  );
+}
+
+/** Every player's career batting line (all columns) — for data export. */
+export async function getAllCareerBatting(): Promise<Record<string, unknown>[]> {
+  return query(
+    `SELECT * FROM mv_career_batting_leaders ORDER BY home_runs DESC NULLS LAST, full_name`,
+  );
+}
+
+/** Every player's career pitching line (all columns) — for data export. */
+export async function getAllCareerPitching(): Promise<Record<string, unknown>[]> {
+  return query(
+    `SELECT * FROM mv_career_pitching_leaders ORDER BY wins DESC NULLS LAST, full_name`,
+  );
+}
+
 /** Distinct regular-season years that have games, newest first. */
 export async function getGameSeasons(): Promise<number[]> {
   const rows = await query<{ season: number }>(

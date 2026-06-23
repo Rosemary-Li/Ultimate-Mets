@@ -1,5 +1,6 @@
 import { getGameSeasons, getSeasonGameLog } from "@/lib/db";
 import GameLog from "@/components/GameLog";
+import ExportPanel from "@/components/ExportPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,11 @@ export default async function GamesIndexPage({
         Full season game log — scores, decisions & running record, from MLB box
         scores.
       </p>
+      <ExportPanel
+        dataset="games"
+        defaultStart={`${season}-01-01`}
+        defaultEnd={`${season}-12-31`}
+      />
       <GameLog season={season} seasons={seasons} games={games} />
     </div>
   );

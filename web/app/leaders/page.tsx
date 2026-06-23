@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getLeaders, getSeasons, type LeaderScope, type LeaderType } from "@/lib/db";
 import { photoOf } from "@/lib/images";
+import ExportPanel from "@/components/ExportPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +104,8 @@ export default async function LeadersPage({
         Career &amp; single-season leaderboards — computed from per-game data,
         career boards cached as materialized views.
       </p>
+
+      <ExportPanel dataset="leaders" />
 
       <div className={`le-group ${scope === "career" ? "on" : ""}`}>
         Career {scope === "career" && <span className="le-viewing">viewing</span>}

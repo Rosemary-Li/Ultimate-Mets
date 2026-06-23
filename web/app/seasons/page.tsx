@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getSeasons, getFranchiseSummary, getPostseasonSeries } from "@/lib/db";
 import type { PostseasonSeries } from "@/lib/types";
 import ChartView from "@/components/ChartView";
+import ExportPanel from "@/components/ExportPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +87,12 @@ export default async function SeasonsIndexPage() {
         Year-by-year record, finish, and postseason path — from the MLB standings,
         {fran?.first_season ? ` ${fran.first_season}–${fran.last_season}.` : "."}
       </p>
+
+      <ExportPanel
+        dataset="seasons"
+        minYear={fran?.first_season ?? 1962}
+        maxYear={fran?.last_season ?? 2026}
+      />
 
       {fran && (
         <div className="se-fran">
